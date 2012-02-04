@@ -9,6 +9,8 @@ using PluginCore.Utilities;
 using PluginCore.Managers;
 using PluginCore.Helpers;
 using PluginCore;
+using ASCompletion.Context;
+using ASCompletion.Model;
 
 namespace NavigationBar
 {
@@ -126,7 +128,6 @@ namespace NavigationBar
 
                     // Dock a new navigation bar to the top of the current document
                     NavigationBar bar = new NavigationBar();
-                    bar.Dock = DockStyle.Top;
                     content.Controls.Add(bar);
                 }
             }

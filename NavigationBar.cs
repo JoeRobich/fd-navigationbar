@@ -47,7 +47,13 @@ namespace NavigationBar
         {
             InitializeComponent();
             InitializeIcons();
+            
+            // We should remain invisible until we determine that we are in a code file.
+            this.Visible = false;
 
+            // We should be docked at the top of the container.
+            this.Dock = DockStyle.Top;
+            
             HookEvents();
         }
 
@@ -93,6 +99,14 @@ namespace NavigationBar
             ASContext.CurSciControl.TextDeleted += new TextDeletedHandler(CurSciControl_TextDeleted);
         }
 
+        private void UnhookEvents()
+        {
+            // We are not in a code file so we should unhook
+            ASContext.CurSciControl.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
+            ASContext.CurSciControl.TextInserted -= new TextInsertedHandler(CurSciControl_TextInserted);
+            ASContext.CurSciControl.TextDeleted -= new TextDeletedHandler(CurSciControl_TextDeleted);
+        }
+
         void CurSciControl_TextInserted(ScintillaControl sender, int position, int length, int linesAdded)
         {
             // The text has changed start checking for the model to update
@@ -122,6 +136,23 @@ namespace NavigationBar
         private void UpdateUI()
         {
             _updating = true;
+
+            if (!this.Visible)
+            {
+                // Only display the navigation bar if we are a code file
+                if (ASContext.Context.CurrentModel != FileModel.Ignore)
+                {
+                    this.Visible = true;
+                }
+                else
+                {
+                    // Unhook events then remove and dispose of ourselves
+                    UnhookEvents();
+                    this.Parent.Controls.Remove(this);
+                    this.Dispose();
+                    return;
+                }
+            }
 
             // Rebuild the dropdowns if the text changed and the model has updated
             if (_textChanged && 
