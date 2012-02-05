@@ -491,7 +491,7 @@ namespace NavigationBar
                 else if (node is InheritedMemberTreeNode)
                 {
                     // Draw the label in the disabled text color
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(Color.DarkGray), new Point(e.Bounds.Left + 17, e.Bounds.Top));
+                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(Color.Gray), new Point(e.Bounds.Left + 17, e.Bounds.Top));
                 }
                 else
                 {
