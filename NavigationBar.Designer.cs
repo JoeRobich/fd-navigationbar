@@ -69,6 +69,7 @@
             this.classComboBox.TabIndex = 1;
             this.classComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
             this.classComboBox.SelectedIndexChanged += new System.EventHandler(this.comboBox_SelectedIndexChanged);
+            this.classComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
             // 
             // tablePanel
             // 
