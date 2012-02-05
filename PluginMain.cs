@@ -95,6 +95,7 @@ namespace NavigationBar
             this.InitBasics();
             this.LoadSettings();
             this.AddEventHandlers();
+            this.AddShortCuts();
         }
 		
 		/// <summary>
@@ -115,16 +116,10 @@ namespace NavigationBar
                 DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
                 if (content != null)
                 {
-                    // Check to see if we've already added an OutlineBar to the 
+                    // Check to see if we've already added an NavigationBar to the 
                     // current document.
-                    foreach (Control control in content.Controls)
-                    {
-                        if (control is NavigationBar)
-                        {
-                            // If so then ignore
-                            return;
-                        }
-                    }
+                    if (GetNavigationBar(content) != null)
+                        return;
 
                     // Dock a new navigation bar to the top of the current document
                     NavigationBar bar = new NavigationBar();
@@ -135,8 +130,50 @@ namespace NavigationBar
 		
 		#endregion
 
+        #region Plugin Methods
+
+        private void OpenClasses(object sender, EventArgs e)
+        {
+            DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
+            if (content == null)
+                return;
+
+            NavigationBar navBar = GetNavigationBar(content);
+            if (navBar == null)
+                return;
+
+            navBar.OpenClasses();
+        }
+
+        private void OpenMembers(object sender, EventArgs e)
+        {
+             DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
+            if (content == null)
+                return;
+
+            NavigationBar navBar = GetNavigationBar(content);
+            if (navBar == null)
+                return;
+
+            navBar.OpenMembers();
+        }
+
+        private NavigationBar GetNavigationBar(DockContent content)
+        {
+            foreach (Control control in content.Controls)
+            {
+                if (control is NavigationBar)
+                {
+                    return control as NavigationBar;
+                }
+            }
+            return null;
+        }
+
+        #endregion
+
         #region Custom Methods
-       
+
         /// <summary>
         /// Initializes important variables
         /// </summary>
@@ -153,7 +190,26 @@ namespace NavigationBar
         public void AddEventHandlers()
         {
             // Set events you want to listen (combine as flags)
-            EventManager.AddEventHandler(this, EventType.FileSwitch);
+            EventManager.AddEventHandler(this, EventType.FileSwitch | EventType.Command);
+        }
+
+        /// <summary>
+        /// Adds shortcuts for manipulating the navigation bar
+        /// </summary>
+        public void AddShortCuts()
+        {
+            ToolStripMenuItem menu = (ToolStripMenuItem)PluginBase.MainForm.FindMenuItem("SearchMenu");
+            ToolStripMenuItem menuItem;
+            
+            menuItem = new ToolStripMenuItem("Open Classes", null, new EventHandler(OpenClasses));
+            menuItem.Visible = false;
+            PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenClasses", menuItem);
+            menu.DropDownItems.Add(menuItem);
+
+            menuItem = new ToolStripMenuItem("Open Members", null,new EventHandler(OpenMembers));
+            menuItem.Visible = false;
+            PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenMembers", menuItem);
+            menu.DropDownItems.Add(menuItem);
         }
 
         /// <summary>

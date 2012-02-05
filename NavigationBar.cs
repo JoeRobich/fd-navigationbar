@@ -8,6 +8,8 @@ using System.Windows.Forms;
 using ASCompletion.Model;
 using ScintillaNet;
 using ASCompletion.Context;
+using ASCompletion;
+using ASCompletion.Completion;
 
 namespace NavigationBar
 {
@@ -41,7 +43,10 @@ namespace NavigationBar
         private bool _updating = false;
         private int _lastPosition = -1;
         private bool _textChanged = true;
+        private bool _completeBuild = false;
+        private bool _selectedNodeChanged = false;
         private TreeNode _lastSelectedClassNode = null;
+        private TreeNode _lastSelectedMemberNode = null;
 
         public NavigationBar()
         {
@@ -55,6 +60,18 @@ namespace NavigationBar
             this.Dock = DockStyle.Top;
             
             HookEvents();
+        }
+
+        public void OpenClasses()
+        {
+            classComboBox.Focus();
+            classComboBox.DroppedDown = true;
+        }
+
+        public void OpenMembers()
+        {
+            memberComboBox.Focus();
+            memberComboBox.DroppedDown = true;
         }
 
         private void InitializeIcons()
@@ -137,6 +154,7 @@ namespace NavigationBar
         {
             _updating = true;
 
+            // If we are not visible then we should see if we belong in this document
             if (!this.Visible)
             {
                 // Only display the navigation bar if we are a code file
@@ -154,12 +172,21 @@ namespace NavigationBar
                 }
             }
 
+            // If we haven't performed a build after dependencies have been resolved
+            if (!_completeBuild &&
+                ASContext.Context.CurrentModel.GetPublicClass().Extends != ClassModel.VoidClass)
+            {
+                _completeBuild = true;
+                _textChanged = false;
+                updateTimer.Stop();
+                BuildDropDowns();
+            }
             // Rebuild the dropdowns if the text changed and the model has updated
-            if (_textChanged && 
+            else if (_textChanged &&
                 ASContext.Context.CurrentModel != null && !ASContext.Context.CurrentModel.OutOfDate)
             {
-                updateTimer.Stop();
                 _textChanged = false;
+                updateTimer.Stop();
                 BuildDropDowns();
             }
 
@@ -191,13 +218,26 @@ namespace NavigationBar
 
             if (ASContext.Context.CurrentModel != null)
             {
+                List<string> classNames = new List<string>();
+
                 foreach (ClassModel classModel in ASContext.Context.CurrentModel.Classes)
                 {
-                    int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? ICON_INTRINSIC_TYPE :
-                                   ((classModel.Flags & FlagType.Interface) > 0) ? ICON_INTERFACE : ICON_TYPE;
-                    TreeNode node = new ClassTreeNode(classModel, imageNum);
-
+                    TreeNode node = GetClassTreeNode(classModel, false);
                     classComboBox.Items.Add(node);
+
+                    var extendClassModel = classModel.Extends;
+                    while (extendClassModel.Name != "Object") // (extendClassModel != ClassModel.VoidClass)
+                    {
+                        if (classNames.Contains(extendClassModel.QualifiedName))
+                            break;
+
+                        node = GetClassTreeNode(extendClassModel, true);
+
+                        classComboBox.Items.Add(node);
+                        classNames.Add(extendClassModel.QualifiedName);
+
+                        extendClassModel = extendClassModel.Extends;
+                    }
                 }
             }
 
@@ -205,14 +245,25 @@ namespace NavigationBar
             UpdateClassDropDown();
         }
 
+        private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited)
+        {
+            int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? ICON_INTRINSIC_TYPE :
+                           ((classModel.Flags & FlagType.Interface) > 0) ? ICON_INTERFACE : ICON_TYPE;
+            return isInherited ? new InheritedClassTreeNode(classModel, imageNum) :
+                                                new ClassTreeNode(classModel, imageNum) as MemberTreeNode;
+        }
+
         private void BuildMemberDropDown()
         {
             memberComboBox.Items.Clear();
 
+            MemberList members = null;
+            ClassTreeNode classTreeNode = classComboBox.SelectedItem as ClassTreeNode;
+            ClassModel classModel = null;
+
             if (ASContext.Context.CurrentModel != null)
             {
-                MemberList members = null; 
-                if (classComboBox.SelectedItem == null)
+                if (classTreeNode == null)
                 {
                     // The caret is not within a class, so add the global members
                     members = ASContext.Context.CurrentModel.Members;
@@ -220,51 +271,83 @@ namespace NavigationBar
                 else
                 {
                     // The caret is within a class, so add the classes members
-                    ClassTreeNode classTreeNode = (ClassTreeNode)classComboBox.SelectedItem;
-                    ClassModel classModel = (ClassModel)classTreeNode.Model;
+                    classModel = (ClassModel)classTreeNode.Model;
                     members = classModel.Members;
+
+                    // Set the class model to the base class so we can add those members as well
+                    classModel = classModel.Extends;
                 }
 
+                // Add the local members
                 foreach (MemberModel member in members)
                 {
-                    MemberTreeNode node = null;
-                    int imageIndex;
-                    if ((member.Flags & FlagType.Constant) > 0)
-                    {
-                        imageIndex = ((member.Access & Visibility.Private) > 0) ? ICON_PRIVATE_CONST :
-                            ((member.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_CONST : ICON_CONST;
-                        node = new MemberTreeNode(member, imageIndex);
-                    }
-                    else if ((member.Flags & FlagType.Variable) > 0)
-                    {
-                        imageIndex = ((member.Access & Visibility.Private) > 0) ? ICON_PRIVATE_VAR :
-                            ((member.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_VAR : ICON_VAR;
-                        node = new MemberTreeNode(member, imageIndex);
-                    }
-                    else if ((member.Flags & (FlagType.Getter | FlagType.Setter)) > 0)
-                    {
-                        if (node != null && node.Text == member.ToString()) // "collapse" properties
-                            continue;
-                        imageIndex = ((member.Access & Visibility.Private) > 0) ? ICON_PRIVATE_PROPERTY :
-                            ((member.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_PROPERTY : ICON_PROPERTY;
-                        node = new MemberTreeNode(member, imageIndex);
-                    }
-                    else if ((member.Flags & FlagType.Function) > 0)
-                    {
-                        imageIndex = ((member.Access & Visibility.Private) > 0) ? ICON_PRIVATE_FUNCTION :
-                            ((member.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_FUNCTION : ICON_FUNCTION;
-                        node = new MemberTreeNode(member, imageIndex);
-                    }
+                    MemberTreeNode node = GetMemberTreeNode(member, null);
 
                     if (node != null)
                     {
                         memberComboBox.Items.Add(node);
                     }
                 }
+
+                // Add members from our base class
+                while (classModel != null && classModel != ClassModel.VoidClass && classModel.Name != "Object")
+                {
+                    members = classModel.Members;
+
+                    foreach (MemberModel member in members)
+                    {
+                        MemberTreeNode node = GetMemberTreeNode(member, classModel);
+
+                        if (node != null)
+                        {
+                            memberComboBox.Items.Add(node);
+                        }
+                    }
+
+                    // Follow the inheritence chain down
+                    classModel = classModel.Extends;
+                }
             }
 
             // Select the member that contains the caret
             UpdateMemberDropDown();
+        }
+
+        private MemberTreeNode GetMemberTreeNode(MemberModel memberModel, ClassModel classModel)
+        {
+            MemberTreeNode node = null;
+            int imageIndex = int.MinValue;
+
+            if ((memberModel.Flags & FlagType.Constant) > 0)
+            {
+                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_CONST :
+                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_CONST : ICON_CONST;
+            }
+            else if ((memberModel.Flags & FlagType.Variable) > 0)
+            {
+                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_VAR :
+                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_VAR : ICON_VAR;
+            }
+            else if ((memberModel.Flags & (FlagType.Getter | FlagType.Setter)) > 0)
+            {
+                if (node != null && node.Text == memberModel.ToString()) // "collapse" properties
+                    return null;
+                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_PROPERTY :
+                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_PROPERTY : ICON_PROPERTY;
+            }
+            else if ((memberModel.Flags & FlagType.Function) > 0)
+            {
+                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_FUNCTION :
+                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_FUNCTION : ICON_FUNCTION;
+            }
+
+            if (imageIndex != int.MinValue)
+            {
+                node = classModel == null ? new MemberTreeNode(memberModel, imageIndex) :
+                                            new InheritedMemberTreeNode(classModel, memberModel, imageIndex);
+            }
+
+            return node;
         }
 
         private void UpdateClassDropDown()
@@ -277,14 +360,16 @@ namespace NavigationBar
             foreach (MemberTreeNode classNode in classComboBox.Items)
             {
                 // if the caret is within the lines of the class, then select it
-                if (line >= classNode.Model.LineFrom && line <= classNode.Model.LineTo)
+                if (!(classNode is InheritedClassTreeNode) &&
+                    (line >= classNode.Model.LineFrom && line <= classNode.Model.LineTo))
                 {
                     selectedNode = classNode;
                     break;
                 }
             }
 
-            if (_lastSelectedClassNode != selectedNode)
+            if (_lastSelectedClassNode != selectedNode ||
+                classComboBox.SelectedItem != selectedNode)
             {
                 // Update the combobox with the new selected node
                 _lastSelectedClassNode = selectedNode;
@@ -305,8 +390,10 @@ namespace NavigationBar
 
             foreach (MemberTreeNode memberNode in memberComboBox.Items)
             {
-                // if the caret is within the lines of the member, then select it
-                if (line >= memberNode.Model.LineFrom && line <= memberNode.Model.LineTo)
+                // if the member is in this code file and the caret is within the lines of the member,
+                // then select it
+                if (!(memberNode is InheritedMemberTreeNode) &&
+                    (line >= memberNode.Model.LineFrom && line <= memberNode.Model.LineTo))
                 {
                     selectedNode = memberNode;
                     break;
@@ -316,20 +403,58 @@ namespace NavigationBar
             if (_lastSelectedClassNode != selectedNode)
             {
                 // Update the combobox with the new selected node
+                _lastSelectedMemberNode = selectedNode;
                 memberComboBox.SelectedItem = selectedNode;
             }
         }
 
-        private void comboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBox_DropDownClosed(object sender, EventArgs e)
         {
             ComboBox comboBox = sender as ComboBox;
 
             // If we are not updating and the combobox has a selected item, then
             // navigate to it
-            if (!_updating && comboBox.SelectedItem != null)
+            if (!_updating && _selectedNodeChanged && comboBox.SelectedItem != null)
             {
-                ASContext.Context.OnSelectOutlineNode(comboBox.SelectedItem as TreeNode);
+                TreeNode selectedNode = (TreeNode)comboBox.SelectedItem;
+                if (selectedNode is InheritedMemberTreeNode)
+                {
+                    InheritedMemberTreeNode inheritedNode = (InheritedMemberTreeNode)selectedNode;
+                    FileModel model = ModelsExplorer.Instance.OpenFile(inheritedNode.ClassModel.InFile.FileName);
+
+                    if (!(selectedNode is InheritedClassTreeNode))
+                    {
+                        // We have to update the Tag to reflect the line number the member starts on
+                        foreach (ClassModel classModel in model.Classes)
+                        {
+                            foreach (MemberModel memberModel in classModel.Members)
+                            {
+                                if (inheritedNode.Model.Name == memberModel.Name)
+                                {
+                                    inheritedNode.Tag = memberModel.Name + "@" + memberModel.LineFrom;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ASContext.Context.OnSelectOutlineNode(selectedNode);
+
+                if (selectedNode is InheritedMemberTreeNode)
+                {
+                    _updating = true;
+                    classComboBox.SelectedItem = _lastSelectedClassNode;
+                    memberComboBox.SelectedItem = _lastSelectedMemberNode;
+                    _updating = false;
+                }
             }
+            _selectedNodeChanged = false;
+        }
+
+        private void comboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _selectedNodeChanged = true;
         }
 
         private void comboBox_DrawItem(object sender, DrawItemEventArgs e)
@@ -362,6 +487,12 @@ namespace NavigationBar
                     // Draw the label in the disabled text color
                     e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.GrayText), new Point(e.Bounds.Left + 17, e.Bounds.Top));
                 }
+                // Is this item inherited?
+                else if (node is InheritedMemberTreeNode)
+                {
+                    // Draw the label in the disabled text color
+                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(Color.DarkGray), new Point(e.Bounds.Left + 17, e.Bounds.Top));
+                }
                 else
                 {
                     // Draw the label in the foreground color
@@ -369,17 +500,6 @@ namespace NavigationBar
                 }
             }
         }
-    }
-}
-
-class ClassTreeNode : MemberTreeNode
-{
-    public ClassTreeNode(ClassModel classModel, int imageIndex)
-        : base(classModel, imageIndex)
-    {
-        Text = classModel.Name;
-        Tag = "class";
-        _label = classModel.QualifiedName;
     }
 }
 
@@ -410,5 +530,47 @@ class MemberTreeNode : TreeNode
         {
             return _label;
         }
+    }
+}
+
+class InheritedMemberTreeNode : MemberTreeNode
+{
+    protected ClassModel _classModel = null;
+
+    public InheritedMemberTreeNode(ClassModel classModel, MemberModel memberModel, int imageIndex)
+        : base(memberModel, imageIndex)
+    {
+        _label = this.Text + " - " + classModel.Name;
+        _classModel = classModel;
+    }
+
+    public ClassModel ClassModel
+    {
+        get
+        {
+            return _classModel;
+        }
+    }
+}
+
+class ClassTreeNode : MemberTreeNode
+{
+    public ClassTreeNode(ClassModel classModel, int imageIndex)
+        : base(classModel, imageIndex)
+    {
+        Text = classModel.Name;
+        Tag = "class";
+        _label = classModel.QualifiedName;
+    }
+}
+
+class InheritedClassTreeNode : InheritedMemberTreeNode
+{
+    public InheritedClassTreeNode(ClassModel classModel, int imageIndex)
+        : base(classModel, classModel, imageIndex)
+    {
+        Text = classModel.Name;
+        Tag = "class";
+        _label = classModel.QualifiedName;
     }
 }

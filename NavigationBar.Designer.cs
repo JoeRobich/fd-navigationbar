@@ -52,6 +52,7 @@
             this.memberComboBox.TabIndex = 0;
             this.memberComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
             this.memberComboBox.SelectedIndexChanged += new System.EventHandler(this.comboBox_SelectedIndexChanged);
+            this.memberComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
             // 
             // classComboBox
             // 
@@ -98,13 +99,13 @@
             // 
             this.updateTimer.Tick += new System.EventHandler(this.updateTimer_Tick);
             // 
-            // OutlineBar
+            // NavigationBar
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.bottomBorder);
             this.Controls.Add(this.tablePanel);
-            this.Name = "OutlineBar";
+            this.Name = "NavigationBar";
             this.Size = new System.Drawing.Size(384, 31);
             this.tablePanel.ResumeLayout(false);
             this.ResumeLayout(false);
