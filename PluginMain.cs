@@ -122,7 +122,7 @@ namespace NavigationBar
                         return;
 
                     // Dock a new navigation bar to the top of the current document
-                    NavigationBar bar = new NavigationBar();
+                    NavigationBar bar = new NavigationBar(settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers);
                     content.Controls.Add(bar);
                 }
             }
@@ -168,6 +168,19 @@ namespace NavigationBar
                 }
             }
             return null;
+        }
+
+        private void UpdateNavigationBarSettings()
+        {
+            foreach (var document in FlashDevelop.Globals.MainForm.Documents)
+            {
+                DockContent content = document as DockContent;
+                if (content != null)
+                {
+                    NavigationBar navBar = GetNavigationBar(content);
+                    navBar.UpdateSettings(settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers);
+                }
+            }
         }
 
         #endregion
@@ -224,6 +237,7 @@ namespace NavigationBar
                 Object obj = ObjectSerializer.Deserialize(this.settingFilename, this.settingObject);
                 this.settingObject = (Settings)obj;
             }
+            this.settingObject.OnSettingsChanged += new SettingsChangesEvent(UpdateNavigationBarSettings);
         }
 
         /// <summary>

@@ -45,10 +45,12 @@ namespace NavigationBar
         private bool _textChanged = true;
         private bool _completeBuild = false;
         private bool _selectedNodeChanged = false;
+        private bool _showSuperClasses = false;
+        private bool _showInheritedMembers = false;
         private TreeNode _lastSelectedClassNode = null;
         private TreeNode _lastSelectedMemberNode = null;
 
-        public NavigationBar()
+        public NavigationBar(bool showSuperClasses, bool showInheritedMembers)
         {
             InitializeComponent();
             InitializeIcons();
@@ -58,6 +60,9 @@ namespace NavigationBar
 
             // We should be docked at the top of the container.
             this.Dock = DockStyle.Top;
+
+            _showSuperClasses = showSuperClasses;
+            _showInheritedMembers = showInheritedMembers;
             
             HookEvents();
         }
@@ -72,6 +77,15 @@ namespace NavigationBar
         {
             memberComboBox.Focus();
             memberComboBox.DroppedDown = true;
+        }
+
+        public void UpdateSettings(bool showSuperClasses, bool showInheritedMembers)
+        {
+            _showSuperClasses = showSuperClasses;
+            _showInheritedMembers = showInheritedMembers;
+
+            // Forces a rebuild of the dropdowns
+            _textChanged = true;
         }
 
         private void InitializeIcons()
@@ -177,9 +191,15 @@ namespace NavigationBar
                 ASContext.Context.CurrentModel.GetPublicClass().Extends != ClassModel.VoidClass)
             {
                 _completeBuild = true;
-                _textChanged = false;
-                updateTimer.Stop();
-                BuildDropDowns();
+
+                // If the text has changed and we need to rebuild or
+                // We need to show inherited classes or members
+                if (_textChanged || _showInheritedMembers || _showSuperClasses)
+                {
+                    _textChanged = false;
+                    updateTimer.Stop();
+                    BuildDropDowns();
+                }
             }
             // Rebuild the dropdowns if the text changed and the model has updated
             else if (_textChanged &&
@@ -225,18 +245,21 @@ namespace NavigationBar
                     TreeNode node = GetClassTreeNode(classModel, false);
                     classComboBox.Items.Add(node);
 
-                    var extendClassModel = classModel.Extends;
-                    while (extendClassModel.Name != "Object") // (extendClassModel != ClassModel.VoidClass)
+                    if (_showSuperClasses)
                     {
-                        if (classNames.Contains(extendClassModel.QualifiedName))
-                            break;
+                        var extendClassModel = classModel.Extends;
+                        while (extendClassModel.Name != "Object") // (extendClassModel != ClassModel.VoidClass)
+                        {
+                            if (classNames.Contains(extendClassModel.QualifiedName))
+                                break;
 
-                        node = GetClassTreeNode(extendClassModel, true);
+                            node = GetClassTreeNode(extendClassModel, true);
 
-                        classComboBox.Items.Add(node);
-                        classNames.Add(extendClassModel.QualifiedName);
+                            classComboBox.Items.Add(node);
+                            classNames.Add(extendClassModel.QualifiedName);
 
-                        extendClassModel = extendClassModel.Extends;
+                            extendClassModel = extendClassModel.Extends;
+                        }
                     }
                 }
             }
@@ -289,23 +312,26 @@ namespace NavigationBar
                     }
                 }
 
-                // Add members from our base class
-                while (classModel != null && classModel != ClassModel.VoidClass && classModel.Name != "Object")
+                if (_showInheritedMembers)
                 {
-                    members = classModel.Members;
-
-                    foreach (MemberModel member in members)
+                    // Add members from our base class
+                    while (classModel != null && classModel != ClassModel.VoidClass && classModel.Name != "Object")
                     {
-                        MemberTreeNode node = GetMemberTreeNode(member, classModel);
+                        members = classModel.Members;
 
-                        if (node != null)
+                        foreach (MemberModel member in members)
                         {
-                            memberComboBox.Items.Add(node);
-                        }
-                    }
+                            MemberTreeNode node = GetMemberTreeNode(member, classModel);
 
-                    // Follow the inheritence chain down
-                    classModel = classModel.Extends;
+                            if (node != null)
+                            {
+                                memberComboBox.Items.Add(node);
+                            }
+                        }
+
+                        // Follow the inheritence chain down
+                        classModel = classModel.Extends;
+                    }
                 }
             }
 
