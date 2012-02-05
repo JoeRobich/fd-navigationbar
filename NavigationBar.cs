@@ -240,6 +240,7 @@ namespace NavigationBar
             {
                 List<string> classNames = new List<string>();
 
+                // Add all the classes from this file
                 foreach (ClassModel classModel in ASContext.Context.CurrentModel.Classes)
                 {
                     TreeNode node = GetClassTreeNode(classModel, false);
@@ -247,9 +248,12 @@ namespace NavigationBar
 
                     if (_showSuperClasses)
                     {
+                        // While extended class is not Object or Void
                         var extendClassModel = classModel.Extends;
-                        while (extendClassModel.Name != "Object") // (extendClassModel != ClassModel.VoidClass)
+                        while (extendClassModel.Name != "Object" && 
+                               extendClassModel != ClassModel.VoidClass)
                         {
+                            // Have we already added this class? Multiple classes could extend the same base.
                             if (classNames.Contains(extendClassModel.QualifiedName))
                                 break;
 
@@ -314,8 +318,10 @@ namespace NavigationBar
 
                 if (_showInheritedMembers)
                 {
-                    // Add members from our base class
-                    while (classModel != null && classModel != ClassModel.VoidClass && classModel.Name != "Object")
+                    // Add members from our base class as long as it isn't Object or Void
+                    while (classModel != null && 
+                           classModel != ClassModel.VoidClass && 
+                           classModel.Name != "Object")
                     {
                         members = classModel.Members;
 
@@ -379,6 +385,17 @@ namespace NavigationBar
         private void UpdateClassDropDown()
         {
             MemberTreeNode selectedNode = null;
+            bool singleClassContext = false;
+
+            // Check to see if there is only one class in this file
+            if (ASContext.Context.CurrentModel != null)
+            {
+                if (ASContext.Context.CurrentModel.Classes.Count == 1 &&
+                    ASContext.Context.CurrentModel.Members.Count == 0)
+                {
+                    singleClassContext = true;
+                }
+            }
 
             // get the line the caret is on
             int line = ASContext.CurSciControl.LineFromPosition(ASContext.CurSciControl.CurrentPos);
@@ -387,7 +404,8 @@ namespace NavigationBar
             {
                 // if the caret is within the lines of the class, then select it
                 if (!(classNode is InheritedClassTreeNode) &&
-                    (line >= classNode.Model.LineFrom && line <= classNode.Model.LineTo))
+                    (singleClassContext ||
+                    (line >= classNode.Model.LineFrom && line <= classNode.Model.LineTo)))
                 {
                     selectedNode = classNode;
                     break;
@@ -426,7 +444,8 @@ namespace NavigationBar
                 }
             }
 
-            if (_lastSelectedClassNode != selectedNode)
+            if (_lastSelectedClassNode != selectedNode ||
+                memberComboBox.SelectedItem != selectedNode)
             {
                 // Update the combobox with the new selected node
                 _lastSelectedMemberNode = selectedNode;
@@ -467,6 +486,7 @@ namespace NavigationBar
 
                 ASContext.Context.OnSelectOutlineNode(selectedNode);
 
+                // If navigating to an inherited class or member, we need to reset our combobox
                 if (selectedNode is InheritedMemberTreeNode)
                 {
                     _updating = true;
