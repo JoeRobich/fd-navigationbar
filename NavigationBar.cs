@@ -44,7 +44,6 @@ namespace NavigationBar
         private int _lastPosition = -1;
         private bool _textChanged = true;
         private bool _completeBuild = false;
-        private bool _selectedNodeChanged = false;
         private bool _showSuperClasses = false;
         private bool _showInheritedMembers = false;
         private TreeNode _lastSelectedClassNode = null;
@@ -453,13 +452,12 @@ namespace NavigationBar
             }
         }
 
-        private void comboBox_DropDownClosed(object sender, EventArgs e)
+        private void comboBox_SelectionChangeCommitted(object sender, EventArgs e)
         {
             ComboBox comboBox = sender as ComboBox;
-
             // If we are not updating and the combobox has a selected item, then
             // navigate to it
-            if (!_updating && _selectedNodeChanged && comboBox.SelectedItem != null)
+            if (!_updating && comboBox.SelectedItem != null)
             {
                 TreeNode selectedNode = (TreeNode)comboBox.SelectedItem;
                 if (selectedNode is InheritedMemberTreeNode)
@@ -495,12 +493,17 @@ namespace NavigationBar
                     _updating = false;
                 }
             }
-            _selectedNodeChanged = false;
         }
 
-        private void comboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBox_DropDownClosed(object sender, EventArgs e)
         {
-            _selectedNodeChanged = true;
+            if (ASContext.CurSciControl != null)
+                ASContext.CurSciControl.Focus();
+
+            _updating = true;
+            classComboBox.SelectedItem = _lastSelectedClassNode;
+            memberComboBox.SelectedItem = _lastSelectedMemberNode;
+            _updating = false;
         }
 
         private void comboBox_DrawItem(object sender, DrawItemEventArgs e)

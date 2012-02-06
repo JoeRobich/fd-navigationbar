@@ -51,7 +51,7 @@
             this.memberComboBox.Sorted = true;
             this.memberComboBox.TabIndex = 0;
             this.memberComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
-            this.memberComboBox.SelectedIndexChanged += new System.EventHandler(this.comboBox_SelectedIndexChanged);
+            this.memberComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
             this.memberComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
             // 
             // classComboBox
@@ -68,7 +68,7 @@
             this.classComboBox.Sorted = true;
             this.classComboBox.TabIndex = 1;
             this.classComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
-            this.classComboBox.SelectedIndexChanged += new System.EventHandler(this.comboBox_SelectedIndexChanged);
+            this.classComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
             this.classComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
             // 
             // tablePanel
