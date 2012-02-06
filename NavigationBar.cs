@@ -121,20 +121,26 @@ namespace NavigationBar
 
         private void HookEvents()
         {
-            // Check for whether the cursor has moved
-            ASContext.CurSciControl.UpdateUI += new UpdateUIHandler(_scintella_UpdateUI);
+            if (ASContext.CurSciControl != null)
+            {
+                // Check for whether the cursor has moved
+                ASContext.CurSciControl.UpdateUI += new UpdateUIHandler(_scintella_UpdateUI);
 
-            // The code has changed so we will need to rebuild the dropdowns
-            ASContext.CurSciControl.TextInserted += new TextInsertedHandler(CurSciControl_TextInserted);
-            ASContext.CurSciControl.TextDeleted += new TextDeletedHandler(CurSciControl_TextDeleted);
+                // The code has changed so we will need to rebuild the dropdowns
+                ASContext.CurSciControl.TextInserted += new TextInsertedHandler(CurSciControl_TextInserted);
+                ASContext.CurSciControl.TextDeleted += new TextDeletedHandler(CurSciControl_TextDeleted);
+            }
         }
 
         private void UnhookEvents()
         {
-            // We are not in a code file so we should unhook
-            ASContext.CurSciControl.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
-            ASContext.CurSciControl.TextInserted -= new TextInsertedHandler(CurSciControl_TextInserted);
-            ASContext.CurSciControl.TextDeleted -= new TextDeletedHandler(CurSciControl_TextDeleted);
+            if (ASContext.CurSciControl != null)
+            {
+                // We are not in a code file so we should unhook
+                ASContext.CurSciControl.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
+                ASContext.CurSciControl.TextInserted -= new TextInsertedHandler(CurSciControl_TextInserted);
+                ASContext.CurSciControl.TextDeleted -= new TextDeletedHandler(CurSciControl_TextDeleted);
+            }
         }
 
         void CurSciControl_TextInserted(ScintillaControl sender, int position, int length, int linesAdded)

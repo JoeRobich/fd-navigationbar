@@ -139,7 +139,7 @@ namespace NavigationBar
                 return;
 
             NavigationBar navBar = GetNavigationBar(content);
-            if (navBar != null && navBar.Visible)
+            if (navBar == null || !navBar.Visible)
                 return;
 
             navBar.OpenClasses();
@@ -152,7 +152,7 @@ namespace NavigationBar
                 return;
 
             NavigationBar navBar = GetNavigationBar(content);
-            if (navBar == null)
+            if (navBar == null || !navBar.Visible)
                 return;
 
             navBar.OpenMembers();
