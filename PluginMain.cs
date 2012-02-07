@@ -122,7 +122,7 @@ namespace NavigationBar
                         return;
 
                     // Dock a new navigation bar to the top of the current document
-                    NavigationBar bar = new NavigationBar(settingObject.ShowImportedClasses, settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers, settingObject.ShowQualifiedClassName, settingObject.MemberSortMethod);
+                    NavigationBar bar = new NavigationBar(settingObject);
                     content.Controls.Add(bar);
                 }
             }
@@ -191,7 +191,7 @@ namespace NavigationBar
                 if (content != null)
                 {
                     NavigationBar navBar = GetNavigationBar(content);
-                    navBar.UpdateSettings(settingObject.ShowImportedClasses, settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers, settingObject.ShowQualifiedClassName, settingObject.MemberSortMethod);
+                    navBar.UpdateSettings(settingObject);
                 }
             }
         }

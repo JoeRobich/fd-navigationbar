@@ -52,6 +52,7 @@
             this.memberComboBox.TabIndex = 0;
             this.memberComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
             this.memberComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
+            this.memberComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
             this.memberComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
             // 
             // classComboBox
@@ -68,6 +69,7 @@
             this.classComboBox.TabIndex = 1;
             this.classComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
             this.classComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
+            this.classComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
             this.classComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
             // 
             // tablePanel
@@ -101,6 +103,7 @@
             this.importComboBox.TabIndex = 2;
             this.importComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
             this.importComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
+            this.importComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
             this.importComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
             // 
             // bottomBorder
