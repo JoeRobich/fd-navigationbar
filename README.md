@@ -1,8 +1,23 @@
-# FlashDevelop NavigationBar Plugin
+# NavigationBar for FlashDevelop 4
 
-Adds a navigation bar to FlashDevelop. Easily access the classes and members within the file that you are editing.
+Adds a bar that provides dropdowns for classes, members, and optionally imports. Configure shortcuts for the dropdowns to quickly navigate through your code. Optionally, inherited classes and members are also available and rendered in a gray color (may lag a bit on large projects/classes). Sort the dropdowns with the same sorts available in the Outline panel.
+
+![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
+
+## History
+**v1.7** - Opening imports should work in more cases now.  
+**v1.6** - Added optional Imports dropdown with configurable shortcut. Added setting to choose the sort applied to the dropdowns. Added setting to control showing qualified class names. Fixed bug where editor would get focus when swapping between dropdowns using the shortcut keys.  
+**v1.5** - Fixed bug with phantom dropdown when using the shortcuts in non-code files. Fixed bug with closing dropdown without making a selection causing navigation. Fixed null reference error when the Context does not contain a Scintilla control.  
+**v1.4** - If there is a single class and no package/global members, then that class is always selected. fixed void getting added to the class dropdown.  
+**v1.3** - Showing inherited classes and members are now configurable via settings.  
+**v1.2** - Added shortcuts for each dropdown (no defaults). Inherited classes and members are added to dropdowns.  
+**v1.1** - Fixed issue with using the keyboard to scroll through the dropdown lists.  
+**v1.0** - Navigation bar removes itself from non-code files.  
+**v0.8** - Rebuilds dropdowns only when needed.  
+**v0.1** - Initial creation  
 
 ## Thanks go to
 
 - The FlashDevelop team for making an awesome product and being very helpful in the forums (http://flashdevelop.org/)
 - Canab the maker of the QuickNavigationPlugin of which I borrowed a little more than inspiration (http://www.flashdevelop.org/community/viewtopic.php?f=4&t=5961)
+- Everyone who has submitted a bug report (Philippe, IAP, bjarneh)
