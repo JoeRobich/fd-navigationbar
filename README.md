@@ -4,6 +4,9 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
+## Download
+[Version 1.7](http://goo.gl/etaZn)
+
 ## History
 **v1.7** - Opening imports should work in more cases now.  
 **v1.6** - Added optional Imports dropdown with configurable shortcut. Added setting to choose the sort applied to the dropdowns. Added setting to control showing qualified class names. Fixed bug where editor would get focus when swapping between dropdowns using the shortcut keys.  
