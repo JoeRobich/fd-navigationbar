@@ -122,7 +122,7 @@ namespace NavigationBar
                         return;
 
                     // Dock a new navigation bar to the top of the current document
-                    NavigationBar bar = new NavigationBar(settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers);
+                    NavigationBar bar = new NavigationBar(settingObject.ShowImportedClasses, settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers, settingObject.ShowQualifiedClassName, settingObject.MemberSortMethod);
                     content.Controls.Add(bar);
                 }
             }
@@ -131,6 +131,19 @@ namespace NavigationBar
 		#endregion
 
         #region Plugin Methods
+
+        private void OpenImports(object sender, EventArgs e)
+        {
+            DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
+            if (content == null)
+                return;
+
+            NavigationBar navBar = GetNavigationBar(content);
+            if (navBar == null || !navBar.Visible)
+                return;
+
+            navBar.OpenImports();
+        }
 
         private void OpenClasses(object sender, EventArgs e)
         {
@@ -178,7 +191,7 @@ namespace NavigationBar
                 if (content != null)
                 {
                     NavigationBar navBar = GetNavigationBar(content);
-                    navBar.UpdateSettings(settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers);
+                    navBar.UpdateSettings(settingObject.ShowImportedClasses, settingObject.ShowSuperClasses, settingObject.ShowInheritedMembers, settingObject.ShowQualifiedClassName, settingObject.MemberSortMethod);
                 }
             }
         }
@@ -213,7 +226,12 @@ namespace NavigationBar
         {
             ToolStripMenuItem menu = (ToolStripMenuItem)PluginBase.MainForm.FindMenuItem("SearchMenu");
             ToolStripMenuItem menuItem;
-            
+
+            menuItem = new ToolStripMenuItem("Open Imports", null, new EventHandler(OpenImports));
+            menuItem.Visible = false;
+            PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenImports", menuItem);
+            menu.DropDownItems.Add(menuItem);
+
             menuItem = new ToolStripMenuItem("Open Classes", null, new EventHandler(OpenClasses));
             menuItem.Visible = false;
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenClasses", menuItem);

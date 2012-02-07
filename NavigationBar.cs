@@ -10,46 +10,29 @@ using ScintillaNet;
 using ASCompletion.Context;
 using ASCompletion;
 using ASCompletion.Completion;
+using ASCompletion.Settings;
 
 namespace NavigationBar
 {
     public partial class NavigationBar : UserControl
     {
-        public const int ICON_FILE = 0;
-        public const int ICON_FOLDER_CLOSED = 1;
-        public const int ICON_FOLDER_OPEN = 2;
-        public const int ICON_CHECK_SYNTAX = 3;
-        public const int ICON_QUICK_BUILD = 4;
-        public const int ICON_PACKAGE = 5;
-        public const int ICON_INTERFACE = 6;
-        public const int ICON_INTRINSIC_TYPE = 7;
-        public const int ICON_TYPE = 8;
-        public const int ICON_VAR = 9;
-        public const int ICON_PROTECTED_VAR = 10;
-        public const int ICON_PRIVATE_VAR = 11;
-        public const int ICON_CONST = 12;
-        public const int ICON_PROTECTED_CONST = 13;
-        public const int ICON_PRIVATE_CONST = 14;
-        public const int ICON_FUNCTION = 15;
-        public const int ICON_PROTECTED_FUNCTION = 16;
-        public const int ICON_PRIVATE_FUNCTION = 17;
-        public const int ICON_PROPERTY = 18;
-        public const int ICON_PROTECTED_PROPERTY = 19;
-        public const int ICON_PRIVATE_PROPERTY = 20;
-        public const int ICON_TEMPLATE = 21;
-        public const int ICON_DECLARATION = 22;
-
         private ImageList _icons = null;
         private bool _updating = false;
         private int _lastPosition = -1;
-        private bool _textChanged = true;
+        private bool _textChanged = false;
         private bool _completeBuild = false;
+
+        private bool _showImportedClasses = false;
         private bool _showSuperClasses = false;
         private bool _showInheritedMembers = false;
+        private bool _showQualifiedClassNames = true;
+        private MemberTreeNodeComparer _memberSort = null;
+        private OutlineSorting _sortMethod = OutlineSorting.Sorted;
+
         private TreeNode _lastSelectedClassNode = null;
         private TreeNode _lastSelectedMemberNode = null;
 
-        public NavigationBar(bool showSuperClasses, bool showInheritedMembers)
+        public NavigationBar(bool showImportedClasses, bool showSuperClasses, bool showInheritedMembers, bool showQualifiedClassNames, OutlineSorting sortMethod)
         {
             InitializeComponent();
             InitializeIcons();
@@ -60,28 +43,68 @@ namespace NavigationBar
             // We should be docked at the top of the container.
             this.Dock = DockStyle.Top;
 
-            _showSuperClasses = showSuperClasses;
-            _showInheritedMembers = showInheritedMembers;
-            
+            UpdateSettings(showImportedClasses, showSuperClasses, showInheritedMembers, showQualifiedClassNames, sortMethod);
             HookEvents();
+        }
+
+        public void OpenImports()
+        {
+            if (_showImportedClasses)
+            {
+                if (classComboBox.DroppedDown)
+                    classComboBox.DroppedDown = false;
+                else if (memberComboBox.DroppedDown)
+                    memberComboBox.DroppedDown = false;
+
+                importComboBox.Focus();
+                importComboBox.DroppedDown = true;
+            }
         }
 
         public void OpenClasses()
         {
+            if (importComboBox.DroppedDown)
+                importComboBox.DroppedDown = false;
+            else if (memberComboBox.DroppedDown)
+                memberComboBox.DroppedDown = false;
+
             classComboBox.Focus();
             classComboBox.DroppedDown = true;
         }
 
         public void OpenMembers()
         {
+            if (importComboBox.DroppedDown)
+                importComboBox.DroppedDown = false;
+            else if (classComboBox.DroppedDown)
+                classComboBox.DroppedDown = false;
+
             memberComboBox.Focus();
             memberComboBox.DroppedDown = true;
         }
 
-        public void UpdateSettings(bool showSuperClasses, bool showInheritedMembers)
+        public void UpdateSettings(bool showImportedClasses, bool showSuperClasses, bool showInheritedMembers, bool showQualifiedClassNames, OutlineSorting sortMethod)
         {
+            _showImportedClasses = showImportedClasses;
             _showSuperClasses = showSuperClasses;
             _showInheritedMembers = showInheritedMembers;
+            _showQualifiedClassNames = showQualifiedClassNames;
+            _sortMethod = sortMethod;
+
+            _memberSort = null;
+            switch (_sortMethod)
+            {
+                case OutlineSorting.Sorted:
+                    _memberSort = new MemberTreeNodeComparer(null);
+                    break;
+                case OutlineSorting.SortedByKind:
+                case OutlineSorting.SortedGroup:
+                    _memberSort = new MemberTreeNodeComparer(new ByKindMemberComparer());
+                    break;
+                case OutlineSorting.SortedSmart:
+                    _memberSort = new MemberTreeNodeComparer(new SmartMemberComparer());
+                    break;
+            }
 
             // Forces a rebuild of the dropdowns
             _textChanged = true;
@@ -191,6 +214,19 @@ namespace NavigationBar
                 }
             }
 
+            // Show the imported dropdown if it is not visible
+            if (_showImportedClasses && tablePanel.ColumnStyles[0].SizeType == SizeType.Absolute)
+            {
+                tablePanel.ColumnStyles[0].SizeType = SizeType.Percent;
+                tablePanel.ColumnStyles[0].Width = 33.33f;
+            }
+            // Hide the imported dropdown if it is visible
+            else if (!_showImportedClasses && tablePanel.ColumnStyles[0].SizeType == SizeType.Percent)
+            {
+                tablePanel.ColumnStyles[0].SizeType = SizeType.Absolute;
+                tablePanel.ColumnStyles[0].Width = 0f;
+            }
+
             // If we haven't performed a build after dependencies have been resolved
             if (!_completeBuild &&
                 ASContext.Context.CurrentModel.GetPublicClass().Extends != ClassModel.VoidClass)
@@ -199,7 +235,7 @@ namespace NavigationBar
 
                 // If the text has changed and we need to rebuild or
                 // We need to show inherited classes or members
-                if (_textChanged || _showInheritedMembers || _showSuperClasses)
+                if (_textChanged || _showImportedClasses || _showInheritedMembers || _showSuperClasses)
                 {
                     _textChanged = false;
                     updateTimer.Stop();
@@ -227,14 +263,36 @@ namespace NavigationBar
 
         private void BuildDropDowns()
         {
+            BuildImportDropDown();
             BuildClassDropDown();
             BuildMemberDropDown();
         }
 
-        private void UpdateDropDowns()
+        private void BuildImportDropDown()
         {
-            UpdateClassDropDown();
-            UpdateMemberDropDown();
+            importComboBox.Items.Clear();
+
+            if (ASContext.Context.CurrentModel != null)
+            {
+                List<MemberTreeNode> importNodes = new List<MemberTreeNode>();
+
+                // Add all the imported classes from this file
+                foreach (MemberModel importModel in ASContext.Context.CurrentModel.Imports)
+                {
+                    int imageNum = importModel.Type.EndsWith(".*") ? ASCompletion.PluginUI.ICON_PACKAGE :
+                        ((importModel.Flags & FlagType.Intrinsic) > 0) ? ASCompletion.PluginUI.ICON_INTRINSIC_TYPE : 
+                        ASCompletion.PluginUI.ICON_TYPE;
+
+                    MemberTreeNode node = new ImportTreeNode(importModel, imageNum, _showQualifiedClassNames);
+                    importNodes.Add(node);
+                }
+
+                // Apply member sort
+                if (_sortMethod != OutlineSorting.None)
+                    importNodes.Sort(_memberSort);
+
+                importComboBox.Items.AddRange(importNodes.ToArray());
+            }
         }
 
         private void BuildClassDropDown()
@@ -243,34 +301,42 @@ namespace NavigationBar
 
             if (ASContext.Context.CurrentModel != null)
             {
+                List<MemberTreeNode> classNodes = new List<MemberTreeNode>();
                 List<string> classNames = new List<string>();
 
                 // Add all the classes from this file
                 foreach (ClassModel classModel in ASContext.Context.CurrentModel.Classes)
                 {
-                    TreeNode node = GetClassTreeNode(classModel, false);
-                    classComboBox.Items.Add(node);
+                    MemberTreeNode node = GetClassTreeNode(classModel, false);
+                    classNodes.Add(node);
 
                     if (_showSuperClasses)
                     {
-                        // While extended class is not Object or Void
+                        // While extended class is not null, Object, Void, or haXe Dynamic
                         var extendClassModel = classModel.Extends;
-                        while (extendClassModel.Name != "Object" && 
-                               extendClassModel != ClassModel.VoidClass)
-                        {
+                        while (extendClassModel != null && 
+                               extendClassModel.Name != "Object" && 
+                               extendClassModel != ClassModel.VoidClass &&
+                               (!extendClassModel.InFile.haXe || extendClassModel.Type != "Dynamic"))
+                         {
                             // Have we already added this class? Multiple classes could extend the same base.
                             if (classNames.Contains(extendClassModel.QualifiedName))
                                 break;
+                            classNames.Add(extendClassModel.QualifiedName);
 
                             node = GetClassTreeNode(extendClassModel, true);
-
-                            classComboBox.Items.Add(node);
-                            classNames.Add(extendClassModel.QualifiedName);
+                            classNodes.Add(node);
 
                             extendClassModel = extendClassModel.Extends;
                         }
                     }
                 }
+
+                // Apply member sort
+                if (_sortMethod != OutlineSorting.None)
+                    classNodes.Sort(_memberSort);
+
+                classComboBox.Items.AddRange(classNodes.ToArray());
             }
 
             // Select the class that contains the caret
@@ -279,10 +345,10 @@ namespace NavigationBar
 
         private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited)
         {
-            int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? ICON_INTRINSIC_TYPE :
-                           ((classModel.Flags & FlagType.Interface) > 0) ? ICON_INTERFACE : ICON_TYPE;
-            return isInherited ? new InheritedClassTreeNode(classModel, imageNum) :
-                                                new ClassTreeNode(classModel, imageNum) as MemberTreeNode;
+            int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? ASCompletion.PluginUI.ICON_INTRINSIC_TYPE :
+                           ((classModel.Flags & FlagType.Interface) > 0) ? ASCompletion.PluginUI.ICON_INTERFACE : ASCompletion.PluginUI.ICON_TYPE;
+            return isInherited ? new InheritedClassTreeNode(classModel, imageNum, _showQualifiedClassNames) :
+                                 new ClassTreeNode(classModel, imageNum, _showQualifiedClassNames) as MemberTreeNode;
         }
 
         private void BuildMemberDropDown()
@@ -295,6 +361,8 @@ namespace NavigationBar
 
             if (ASContext.Context.CurrentModel != null)
             {
+                List<MemberTreeNode> memberNodes = new List<MemberTreeNode>();
+
                 if (classTreeNode == null)
                 {
                     // The caret is not within a class, so add the global members
@@ -305,9 +373,6 @@ namespace NavigationBar
                     // The caret is within a class, so add the classes members
                     classModel = (ClassModel)classTreeNode.Model;
                     members = classModel.Members;
-
-                    // Set the class model to the base class so we can add those members as well
-                    classModel = classModel.Extends;
                 }
 
                 // Add the local members
@@ -316,75 +381,71 @@ namespace NavigationBar
                     MemberTreeNode node = GetMemberTreeNode(member, null);
 
                     if (node != null)
-                    {
-                        memberComboBox.Items.Add(node);
-                    }
+                        memberNodes.Add(node);
                 }
 
-                if (_showInheritedMembers)
-                {
-                    // Add members from our base class as long as it isn't Object or Void
-                    while (classModel != null && 
-                           classModel != ClassModel.VoidClass && 
-                           classModel.Name != "Object")
-                    {
-                        members = classModel.Members;
+                // Add inherited members if applicable
+                if (_showInheritedMembers && classModel != null)
+                    memberNodes.AddRange(GetInheritedMembers(classModel.Extends));
 
-                        foreach (MemberModel member in members)
-                        {
-                            MemberTreeNode node = GetMemberTreeNode(member, classModel);
+                // Apply member sort
+                if (_sortMethod != OutlineSorting.None)
+                    memberNodes.Sort(_memberSort);
 
-                            if (node != null)
-                            {
-                                memberComboBox.Items.Add(node);
-                            }
-                        }
-
-                        // Follow the inheritence chain down
-                        classModel = classModel.Extends;
-                    }
-                }
+                memberComboBox.Items.AddRange(memberNodes.ToArray());
             }
 
             // Select the member that contains the caret
             UpdateMemberDropDown();
         }
 
+        private List<MemberTreeNode> GetInheritedMembers(ClassModel classModel)
+        {
+            List<MemberTreeNode> memberNodes = new List<MemberTreeNode>();
+
+            // Add members from our super class as long as it is not null, Object, Void, or haXe Dynamic
+            while (classModel != null &&
+                   classModel.Name != "Object" &&
+                   classModel != ClassModel.VoidClass &&
+                   (!classModel.InFile.haXe || classModel.Type != "Dynamic"))
+            {
+                MemberList members = classModel.Members;
+
+                foreach (MemberModel member in members)
+                {
+                    MemberTreeNode node = GetMemberTreeNode(member, classModel);
+
+                    if (node != null)
+                    {
+                        memberNodes.Add(node);
+                    }
+                }
+
+                // Follow the inheritence chain down
+                classModel = classModel.Extends;
+            }
+
+            return memberNodes;
+        }
+
         private MemberTreeNode GetMemberTreeNode(MemberModel memberModel, ClassModel classModel)
         {
             MemberTreeNode node = null;
-            int imageIndex = int.MinValue;
+            int imageIndex = ASCompletion.PluginUI.GetMemberIcon(memberModel.Flags, memberModel.Access);
 
-            if ((memberModel.Flags & FlagType.Constant) > 0)
-            {
-                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_CONST :
-                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_CONST : ICON_CONST;
-            }
-            else if ((memberModel.Flags & FlagType.Variable) > 0)
-            {
-                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_VAR :
-                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_VAR : ICON_VAR;
-            }
-            else if ((memberModel.Flags & (FlagType.Getter | FlagType.Setter)) > 0)
-            {
-                if (node != null && node.Text == memberModel.ToString()) // "collapse" properties
-                    return null;
-                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_PROPERTY :
-                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_PROPERTY : ICON_PROPERTY;
-            }
-            else if ((memberModel.Flags & FlagType.Function) > 0)
-            {
-                imageIndex = ((memberModel.Access & Visibility.Private) > 0) ? ICON_PRIVATE_FUNCTION :
-                    ((memberModel.Access & Visibility.Protected) > 0) ? ICON_PROTECTED_FUNCTION : ICON_FUNCTION;
-            }
-
-            if (imageIndex != int.MinValue)
+            if (imageIndex != 0)
             {
                 node = classModel == null ? new MemberTreeNode(memberModel, imageIndex) :
                                             new InheritedMemberTreeNode(classModel, memberModel, imageIndex);
             }
 
             return node;
+        }
+
+        private void UpdateDropDowns()
+        {
+            UpdateClassDropDown();
+            UpdateMemberDropDown();
         }
 
         private void UpdateClassDropDown()
@@ -474,31 +535,34 @@ namespace NavigationBar
                     if (!(selectedNode is InheritedClassTreeNode))
                     {
                         // We have to update the Tag to reflect the line number the member starts on
-                        foreach (ClassModel classModel in model.Classes)
-                        {
-                            foreach (MemberModel memberModel in classModel.Members)
-                            {
-                                if (inheritedNode.Model.Name == memberModel.Name)
-                                {
-                                    inheritedNode.Tag = memberModel.Name + "@" + memberModel.LineFrom;
-                                    break;
-                                }
-                            }
-                        }
+                        inheritedNode.Tag = GetInheritedMemberTag(model, inheritedNode.Model.Name);
                     }
                 }
 
+                // Navigate to node location
                 ASContext.Context.OnSelectOutlineNode(selectedNode);
 
                 // If navigating to an inherited class or member, we need to reset our combobox
-                if (selectedNode is InheritedMemberTreeNode)
+                if (selectedNode is InheritedMemberTreeNode || selectedNode is ImportTreeNode)
                 {
-                    _updating = true;
-                    classComboBox.SelectedItem = _lastSelectedClassNode;
-                    memberComboBox.SelectedItem = _lastSelectedMemberNode;
-                    _updating = false;
+                    ResetDropDowns();
                 }
             }
+        }
+
+        private string GetInheritedMemberTag(FileModel model, string memberName)
+        {
+            foreach (ClassModel classModel in model.Classes)
+            {
+                foreach (MemberModel memberModel in classModel.Members)
+                {
+                    if (memberName == memberModel.Name)
+                    {
+                        return memberModel.Name + "@" + memberModel.LineFrom;
+                    }
+                }
+            }
+            return string.Empty;
         }
 
         private void comboBox_DropDownClosed(object sender, EventArgs e)
@@ -506,7 +570,13 @@ namespace NavigationBar
             if (ASContext.CurSciControl != null)
                 ASContext.CurSciControl.Focus();
 
+            ResetDropDowns();
+        }
+
+        private void ResetDropDowns()
+        {
             _updating = true;
+            importComboBox.SelectedItem = null;
             classComboBox.SelectedItem = _lastSelectedClassNode;
             memberComboBox.SelectedItem = _lastSelectedMemberNode;
             _updating = false;
@@ -608,24 +678,51 @@ class InheritedMemberTreeNode : MemberTreeNode
     }
 }
 
+class ImportTreeNode : MemberTreeNode
+{
+    public ImportTreeNode(MemberModel importModel, int imageIndex, bool showQualifiedClassNames)
+        : base(importModel, imageIndex)
+    {
+        Text = importModel.Type;
+        Tag = "import";
+        _label = showQualifiedClassNames ? importModel.Type : importModel.Name;
+    }
+}
+
 class ClassTreeNode : MemberTreeNode
 {
-    public ClassTreeNode(ClassModel classModel, int imageIndex)
+    public ClassTreeNode(ClassModel classModel, int imageIndex, bool showQualifiedClassNames)
         : base(classModel, imageIndex)
     {
         Text = classModel.Name;
         Tag = "class";
-        _label = classModel.QualifiedName;
+        _label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
     }
 }
 
 class InheritedClassTreeNode : InheritedMemberTreeNode
 {
-    public InheritedClassTreeNode(ClassModel classModel, int imageIndex)
+    public InheritedClassTreeNode(ClassModel classModel, int imageIndex, bool showQualifiedClassNames)
         : base(classModel, classModel, imageIndex)
     {
         Text = classModel.Name;
         Tag = "class";
-        _label = classModel.QualifiedName;
+        _label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
+    }
+}
+
+class MemberTreeNodeComparer : IComparer<MemberTreeNode>
+{
+    private IComparer<MemberModel> _memberModelComparer;
+
+    public MemberTreeNodeComparer(IComparer<MemberModel> memberModelComparer)
+    {
+        _memberModelComparer = memberModelComparer;
+    }
+
+    public int Compare(MemberTreeNode x, MemberTreeNode y)
+    {
+        return _memberModelComparer != null ? _memberModelComparer.Compare(x.Model, y.Model) :
+                                              x.Label.CompareTo(y.Label);
     }
 }
