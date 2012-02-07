@@ -272,19 +272,23 @@ namespace NavigationBar
         {
             importComboBox.Items.Clear();
 
-            if (ASContext.Context.CurrentModel != null)
+            if (ASContext.Context.CurrentModel != null && _showImportedClasses)
             {
                 List<MemberTreeNode> importNodes = new List<MemberTreeNode>();
 
                 // Add all the imported classes from this file
                 foreach (MemberModel importModel in ASContext.Context.CurrentModel.Imports)
                 {
-                    int imageNum = importModel.Type.EndsWith(".*") ? ASCompletion.PluginUI.ICON_PACKAGE :
-                        ((importModel.Flags & FlagType.Intrinsic) > 0) ? ASCompletion.PluginUI.ICON_INTRINSIC_TYPE : 
-                        ASCompletion.PluginUI.ICON_TYPE;
-
-                    MemberTreeNode node = new ImportTreeNode(importModel, imageNum, _showQualifiedClassNames);
-                    importNodes.Add(node);
+                    // ignore package imports
+                    if (!importModel.Type.EndsWith(".*"))
+                    {
+                        ClassModel classModel = ASContext.Context.ResolveType(importModel.Type, ASContext.Context.CurrentModel);
+                        if (!classModel.IsVoid() && classModel.InFile != null)
+                        {
+                            MemberTreeNode node = GetClassTreeNode(classModel, false, true);
+                            importNodes.Add(node);
+                        }
+                    }
                 }
 
                 // Apply member sort
@@ -307,7 +311,7 @@ namespace NavigationBar
                 // Add all the classes from this file
                 foreach (ClassModel classModel in ASContext.Context.CurrentModel.Classes)
                 {
-                    MemberTreeNode node = GetClassTreeNode(classModel, false);
+                    MemberTreeNode node = GetClassTreeNode(classModel, false, false);
                     classNodes.Add(node);
 
                     if (_showSuperClasses)
@@ -324,7 +328,7 @@ namespace NavigationBar
                                 break;
                             classNames.Add(extendClassModel.QualifiedName);
 
-                            node = GetClassTreeNode(extendClassModel, true);
+                            node = GetClassTreeNode(extendClassModel, true, false);
                             classNodes.Add(node);
 
                             extendClassModel = extendClassModel.Extends;
@@ -343,11 +347,12 @@ namespace NavigationBar
             UpdateClassDropDown();
         }
 
-        private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited)
+        private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited, bool isImported)
         {
             int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? ASCompletion.PluginUI.ICON_INTRINSIC_TYPE :
                            ((classModel.Flags & FlagType.Interface) > 0) ? ASCompletion.PluginUI.ICON_INTERFACE : ASCompletion.PluginUI.ICON_TYPE;
             return isInherited ? new InheritedClassTreeNode(classModel, imageNum, _showQualifiedClassNames) :
+                   isImported  ? new ImportTreeNode(classModel, imageNum, _showQualifiedClassNames) :
                                  new ClassTreeNode(classModel, imageNum, _showQualifiedClassNames) as MemberTreeNode;
         }
 
@@ -538,6 +543,13 @@ namespace NavigationBar
                         inheritedNode.Tag = GetInheritedMemberTag(model, inheritedNode.Model.Name);
                     }
                 }
+                else if (selectedNode is ImportTreeNode)
+                {
+                    ImportTreeNode importNode = (ImportTreeNode)selectedNode;
+                    ClassModel importModel = (ClassModel)importNode.Model;
+                    if (!importModel.IsVoid() && importModel.InFile != null)
+                        ModelsExplorer.Instance.OpenFile(importModel.InFile.FileName);
+                }
 
                 // Navigate to node location
                 ASContext.Context.OnSelectOutlineNode(selectedNode);
@@ -680,12 +692,12 @@ class InheritedMemberTreeNode : MemberTreeNode
 
 class ImportTreeNode : MemberTreeNode
 {
-    public ImportTreeNode(MemberModel importModel, int imageIndex, bool showQualifiedClassNames)
+    public ImportTreeNode(ClassModel importModel, int imageIndex, bool showQualifiedClassNames)
         : base(importModel, imageIndex)
     {
-        Text = importModel.Type;
-        Tag = "import";
-        _label = showQualifiedClassNames ? importModel.Type : importModel.Name;
+        Text = importModel.Name;
+        Tag = "class";
+        _label = showQualifiedClassNames ? importModel.QualifiedName : importModel.Name;
     }
 }
 
