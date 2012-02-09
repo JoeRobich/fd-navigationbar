@@ -701,9 +701,9 @@ namespace NavigationBar
 
             // If node navigates to a class then ignore the package name
             if (node is ClassTreeNode || node is ImportTreeNode || node is InheritedClassTreeNode)
-                searchString = node.Model.Name.TrimStart('_');
+                searchString = _settings.IgnoreUnderscore ? node.Model.Name.TrimStart('_') : node.Model.Name;
             else
-                searchString = node.Label.TrimStart('_');
+                searchString = _settings.IgnoreUnderscore ? node.Label.TrimStart('_') : node.Label;
 
             return searchString.StartsWith(searchKey, StringComparison.CurrentCultureIgnoreCase);
         }

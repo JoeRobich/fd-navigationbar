@@ -111,7 +111,7 @@ namespace NavigationBar
 		/// </summary>
 		public void HandleEvent(Object sender, NotifyEvent e, HandlingPriority prority)
 		{
-            if (e.Type == EventType.FileSwitch)
+            if (e.Type == EventType.FileOpen)
             {
                 DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
                 if (content != null)
@@ -216,7 +216,7 @@ namespace NavigationBar
         public void AddEventHandlers()
         {
             // Set events you want to listen (combine as flags)
-            EventManager.AddEventHandler(this, EventType.FileSwitch | EventType.Command);
+            EventManager.AddEventHandler(this, EventType.FileOpen | EventType.Command);
         }
 
         /// <summary>

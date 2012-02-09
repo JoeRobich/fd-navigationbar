@@ -20,6 +20,7 @@ namespace NavigationBar
         private const Boolean DEFAULT_SHOW_INHERITED_MEMBERS = false;
         private const Boolean DEFAULT_SHOW_QUALIFIED_CLASS_NAME = true;
         private const Boolean DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS = false;
+        private const Boolean DEFAULT_IGNORE_UNDERSCORE = false;
         private const OutlineSorting DEFAULT_MEMBER_SORT_METHOD = OutlineSorting.Sorted;
 
         private Boolean showImportedClasses = DEFAULT_SHOW_IMPORTED_CLASSES;
@@ -27,6 +28,7 @@ namespace NavigationBar
         private Boolean showInheritedMembers = DEFAULT_SHOW_INHERITED_MEMBERS;
         private Boolean showQualifiedClassName = DEFAULT_SHOW_QUALIFIED_CLASS_NAME;
         private Boolean labelPropertiesLikeFunctions = DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS;
+        private Boolean ignoreUnderscore = DEFAULT_IGNORE_UNDERSCORE;
         private OutlineSorting memberSortMethod = DEFAULT_MEMBER_SORT_METHOD;
 
         [Category("Navigation")]
@@ -109,6 +111,23 @@ namespace NavigationBar
                 if (labelPropertiesLikeFunctions != value)
                 {
                     labelPropertiesLikeFunctions = value;
+                    FireChanged();
+                }
+            }
+        }
+
+        [Category("Navigation")]
+        [DisplayName("Ignore underscore")]
+        [Description("Whether to ignore the '_' character when using keys to search the dropdown.")]
+        [DefaultValue(DEFAULT_IGNORE_UNDERSCORE)]
+        public Boolean IgnoreUnderscore
+        {
+            get { return ignoreUnderscore; }
+            set
+            {
+                if (ignoreUnderscore != value)
+                {
+                    ignoreUnderscore = value;
                     FireChanged();
                 }
             }
