@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Text;
 using ASCompletion.Settings;
+using NavigationBar.Localization;
 
 namespace NavigationBar
 {
@@ -15,136 +16,136 @@ namespace NavigationBar
         [field: NonSerialized]
         public event SettingsChangesEvent OnSettingsChanged;
 
-        private const Boolean DEFAULT_SHOW_IMPORTED_CLASSES = false;
-        private const Boolean DEFAULT_SHOW_SUPER_CLASSES = false;
-        private const Boolean DEFAULT_SHOW_INHERITED_MEMBERS = false;
-        private const Boolean DEFAULT_SHOW_QUALIFIED_CLASS_NAME = true;
-        private const Boolean DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS = false;
-        private const Boolean DEFAULT_IGNORE_UNDERSCORE = false;
+        private const bool DEFAULT_SHOW_IMPORTED_CLASSES = false;
+        private const bool DEFAULT_SHOW_SUPER_CLASSES = false;
+        private const bool DEFAULT_SHOW_INHERITED_MEMBERS = false;
+        private const bool DEFAULT_SHOW_QUALIFIED_CLASS_NAME = true;
+        private const bool DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS = false;
+        private const bool DEFAULT_IGNORE_UNDERSCORE = false;
         private const OutlineSorting DEFAULT_MEMBER_SORT_METHOD = OutlineSorting.Sorted;
 
-        private Boolean showImportedClasses = DEFAULT_SHOW_IMPORTED_CLASSES;
-        private Boolean showSuperClasses = DEFAULT_SHOW_SUPER_CLASSES;
-        private Boolean showInheritedMembers = DEFAULT_SHOW_INHERITED_MEMBERS;
-        private Boolean showQualifiedClassName = DEFAULT_SHOW_QUALIFIED_CLASS_NAME;
-        private Boolean labelPropertiesLikeFunctions = DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS;
-        private Boolean ignoreUnderscore = DEFAULT_IGNORE_UNDERSCORE;
-        private OutlineSorting memberSortMethod = DEFAULT_MEMBER_SORT_METHOD;
+        private bool _showImportedClasses = DEFAULT_SHOW_IMPORTED_CLASSES;
+        private bool _showSuperClasses = DEFAULT_SHOW_SUPER_CLASSES;
+        private bool _showInheritedMembers = DEFAULT_SHOW_INHERITED_MEMBERS;
+        private bool _showQualifiedClassName = DEFAULT_SHOW_QUALIFIED_CLASS_NAME;
+        private bool _labelPropertiesLikeFunctions = DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS;
+        private bool _ignoreUnderscore = DEFAULT_IGNORE_UNDERSCORE;
+        private OutlineSorting _memberSortMethod = DEFAULT_MEMBER_SORT_METHOD;
 
-        [Category("Navigation")]
-        [DisplayName("Show imported class dropdown")]
-        [Description("Whether the imported class dropdown is visible.")]
+        [LocalizedCategory("NavigationBar.Category.Visibility")]
+        [LocalizedDisplayName("NavigationBar.Label.ShowImportedClasses")]
+        [LocalizedDescription("NavigationBar.Description.ShowImportedClasses")]
         [DefaultValue(DEFAULT_SHOW_IMPORTED_CLASSES)]
-        public Boolean ShowImportedClasses
+        public bool ShowImportedClasses
         {
-            get { return showImportedClasses; }
+            get { return _showImportedClasses; }
             set
             {
-                if (showImportedClasses != value)
+                if (_showImportedClasses != value)
                 {
-                    showImportedClasses = value;
+                    _showImportedClasses = value;
                     FireChanged();
                 }
             }
         }
 
-        [Category("Navigation")]
-        [DisplayName("Show super classes")]
-        [Description("Whether the class dropdown is populated with super classes.")]
+        [LocalizedCategory("NavigationBar.Category.Visibility")]
+        [LocalizedDisplayName("NavigationBar.Label.ShowSuperClasses")]
+        [LocalizedDescription("NavigationBar.Description.ShowSuperClasses")]
         [DefaultValue(DEFAULT_SHOW_SUPER_CLASSES)]
-        public Boolean ShowSuperClasses
+        public bool ShowSuperClasses
         {
-            get { return showSuperClasses; }
+            get { return _showSuperClasses; }
             set
             {
-                if (showSuperClasses != value)
+                if (_showSuperClasses != value)
                 {
-                    showSuperClasses = value;
+                    _showSuperClasses = value;
                     FireChanged();
                 }
             }
         }
 
-        [Category("Navigation")]
-        [DisplayName("Show inherited members")]
-        [Description("Whether the member dropdown is populated with inherited members.")]
+        [LocalizedCategory("NavigationBar.Category.Visibility")]
+        [LocalizedDisplayName("NavigationBar.Label.ShowInheritedMembers")]
+        [LocalizedDescription("NavigationBar.Description.ShowInheritedMembers")]
         [DefaultValue(DEFAULT_SHOW_INHERITED_MEMBERS)]
-        public Boolean ShowInheritedMembers
+        public bool ShowInheritedMembers
         {
-            get { return showInheritedMembers; }
+            get { return _showInheritedMembers; }
             set 
             { 
-                if (showInheritedMembers != value)
+                if (_showInheritedMembers != value)
                 {
-                    showInheritedMembers = value;
+                    _showInheritedMembers = value;
                     FireChanged();
                 }
             }
         }
 
-        [Category("Navigation")]
-        [DisplayName("Show qualified class names")]
-        [Description("Whether to show the qualified class names in the dropdowns.")]
+        [LocalizedCategory("NavigationBar.Category.Labeling")]
+        [LocalizedDisplayName("NavigationBar.Label.ShowQualifiedClassNames")]
+        [LocalizedDescription("NavigationBar.Description.ShowQualifiedClassNames")]
         [DefaultValue(DEFAULT_SHOW_QUALIFIED_CLASS_NAME)]
-        public Boolean ShowQualifiedClassName
+        public bool ShowQualifiedClassName
         {
-            get { return showQualifiedClassName; }
+            get { return _showQualifiedClassName; }
             set
             {
-                if (showQualifiedClassName != value)
+                if (_showQualifiedClassName != value)
                 {
-                    showQualifiedClassName = value;
+                    _showQualifiedClassName = value;
                     FireChanged();
                 }
             }
         }
 
-        [Category("Navigation")]
-        [DisplayName("Label properties like functions")]
-        [Description("Whether the labels for getters/setters look like function labels.")]
+        [LocalizedCategory("NavigationBar.Category.Labeling")]
+        [LocalizedDisplayName("NavigationBar.Label.LabelPropertiesLikeFunctions")]
+        [LocalizedDescription("NavigationBar.Description.LabelPropertiesLikeFunctions")]
         [DefaultValue(DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS)]
-        public Boolean LabelPropertiesLikeFunctions
+        public bool LabelPropertiesLikeFunctions
         {
-            get { return labelPropertiesLikeFunctions; }
+            get { return _labelPropertiesLikeFunctions; }
             set
             {
-                if (labelPropertiesLikeFunctions != value)
+                if (_labelPropertiesLikeFunctions != value)
                 {
-                    labelPropertiesLikeFunctions = value;
+                    _labelPropertiesLikeFunctions = value;
                     FireChanged();
                 }
             }
         }
 
-        [Category("Navigation")]
-        [DisplayName("Ignore underscore")]
-        [Description("Whether to ignore the '_' character when using keys to search the dropdown.")]
+        [LocalizedCategory("NavigationBar.Category.Navigation")]
+        [LocalizedDisplayName("NavigationBar.Label.IgnoreUnderscore")]
+        [LocalizedDescription("NavigationBar.Description.IgnoreUnderscore")]
         [DefaultValue(DEFAULT_IGNORE_UNDERSCORE)]
-        public Boolean IgnoreUnderscore
+        public bool IgnoreUnderscore
         {
-            get { return ignoreUnderscore; }
+            get { return _ignoreUnderscore; }
             set
             {
-                if (ignoreUnderscore != value)
+                if (_ignoreUnderscore != value)
                 {
-                    ignoreUnderscore = value;
+                    _ignoreUnderscore = value;
                     FireChanged();
                 }
             }
         }
 
-        [Category("Navigation")]
-        [DisplayName("Member sort method")]
-        [Description("How should the members dropdown be sorted.")]
+        [LocalizedCategory("NavigationBar.Category.Navigation")]
+        [LocalizedDisplayName("NavigationBar.Label.SortingMethod")]
+        [LocalizedDescription("NavigationBar.Description.SortingMethod")]
         [DefaultValue(DEFAULT_MEMBER_SORT_METHOD)]
         public OutlineSorting MemberSortMethod
         {
-            get { return memberSortMethod; }
+            get { return _memberSortMethod; }
             set
             {
-                if (memberSortMethod != value)
+                if (_memberSortMethod != value)
                 {
-                    memberSortMethod = value;
+                    _memberSortMethod = value;
                     FireChanged();
                 }
             }

@@ -3,7 +3,6 @@ using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
 using System.ComponentModel;
-using WeifenLuo.WinFormsUI.Docking;
 using PluginCore.Localization;
 using PluginCore.Utilities;
 using PluginCore.Managers;
@@ -11,18 +10,22 @@ using PluginCore.Helpers;
 using PluginCore;
 using ASCompletion.Context;
 using ASCompletion.Model;
+using NavigationBar.Controls;
+using NavigationBar.Helpers;
 
 namespace NavigationBar
 {
 	public class PluginMain : IPlugin
 	{
-        private String pluginName = "NavigationBar";
-        private String pluginGuid = "F313AE66-0C5F-4388-B281-9E9AFAD7B8F9";
-        private String pluginHelp = "www.flashdevelop.org/community/";
-        private String pluginDesc = "Adds a navigation bar for quickly moving through your source.";
-        private String pluginAuth = "Joey Robichaud";
-        private String settingFilename = "";
-        private Settings settingObject;
+        private const int API = 1;
+        private const string NAME = "NavigationBar";
+        private const string GUID = "F313AE66-0C5F-4388-B281-9E9AFAD7B8F9";
+        private const string HELP = "www.flashdevelop.org/community/viewtopic.php?f=4&t=9376";
+        private const string DESCRIPTION = "Adds a navigation bar for quickly moving through your source.";
+        private const string AUTHOR = "Joey Robichaud";
+
+        private string _settingFilename = "";
+        private Settings _settings;
 
 	    #region Required Properties
 
@@ -39,7 +42,7 @@ namespace NavigationBar
         /// </summary> 
         public String Name
 		{
-			get { return this.pluginName; }
+			get { return NAME; }
 		}
 
         /// <summary>
@@ -47,7 +50,7 @@ namespace NavigationBar
         /// </summary>
         public String Guid
 		{
-			get { return this.pluginGuid; }
+			get { return GUID; }
 		}
 
         /// <summary>
@@ -55,7 +58,7 @@ namespace NavigationBar
         /// </summary> 
         public String Author
 		{
-			get { return this.pluginAuth; }
+			get { return AUTHOR; }
 		}
 
         /// <summary>
@@ -63,7 +66,7 @@ namespace NavigationBar
         /// </summary> 
         public String Description
 		{
-			get { return this.pluginDesc; }
+			get { return DESCRIPTION; }
 		}
 
         /// <summary>
@@ -71,7 +74,7 @@ namespace NavigationBar
         /// </summary> 
         public String Help
 		{
-			get { return this.pluginHelp; }
+			get { return HELP; }
 		}
 
         /// <summary>
@@ -80,7 +83,7 @@ namespace NavigationBar
         [Browsable(false)]
         public Object Settings
         {
-            get { return this.settingObject; }
+            get { return this._settings; }
         }
 		
 		#endregion
@@ -95,7 +98,7 @@ namespace NavigationBar
             this.InitBasics();
             this.LoadSettings();
             this.AddEventHandlers();
-            this.AddShortCuts();
+            this.CreateMenuItems();
         }
 		
 		/// <summary>
@@ -113,17 +116,32 @@ namespace NavigationBar
 		{
             if (e.Type == EventType.FileOpen)
             {
-                DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
-                if (content != null)
+                ITabbedDocument document = PluginBase.MainForm.CurrentDocument;
+                if (document != null)
                 {
                     // Check to see if we've already added an NavigationBar to the 
                     // current document.
-                    if (GetNavigationBar(content) != null)
+                    if (document.SciControl == null || GetNavigationBar(document) != null)
                         return;
 
                     // Dock a new navigation bar to the top of the current document
-                    NavigationBar bar = new NavigationBar(settingObject);
-                    content.Controls.Add(bar);
+                    Controls.NavigationBar bar = new Controls.NavigationBar(_settings);
+                    document.Controls.Add(bar);
+                }
+            }
+            else if (e.Type == EventType.FileSwitch)
+            {
+                ITabbedDocument document = PluginBase.MainForm.CurrentDocument;
+                if (document != null)
+                {
+                    // Check to see if we've already added an NavigationBar to the 
+                    // current document.
+                    if (document.SciControl == null || GetNavigationBar(document) != null)
+                        return;
+
+                    // Dock a new navigation bar to the top of the current document
+                    Controls.NavigationBar bar = new Controls.NavigationBar(_settings);
+                    bar.RefreshSettings();
                 }
             }
 		}
@@ -134,11 +152,7 @@ namespace NavigationBar
 
         private void OpenImports(object sender, EventArgs e)
         {
-            DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
-            if (content == null)
-                return;
-
-            NavigationBar navBar = GetNavigationBar(content);
+            Controls.NavigationBar navBar = GetNavigationBar();
             if (navBar == null || !navBar.Visible)
                 return;
 
@@ -147,11 +161,7 @@ namespace NavigationBar
 
         private void OpenClasses(object sender, EventArgs e)
         {
-            DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
-            if (content == null)
-                return;
-
-            NavigationBar navBar = GetNavigationBar(content);
+            Controls.NavigationBar navBar = GetNavigationBar();
             if (navBar == null || !navBar.Visible)
                 return;
 
@@ -160,40 +170,32 @@ namespace NavigationBar
 
         private void OpenMembers(object sender, EventArgs e)
         {
-             DockContent content = PluginBase.MainForm.CurrentDocument as DockContent;
-            if (content == null)
-                return;
-
-            NavigationBar navBar = GetNavigationBar(content);
+            Controls.NavigationBar navBar = GetNavigationBar();
             if (navBar == null || !navBar.Visible)
                 return;
 
             navBar.OpenMembers();
         }
 
-        private NavigationBar GetNavigationBar(DockContent content)
+        private Controls.NavigationBar GetNavigationBar()
         {
-            foreach (Control control in content.Controls)
+            ITabbedDocument document = PluginBase.MainForm.CurrentDocument;
+            if (document != null)
+                return null;
+
+            return GetNavigationBar(document);
+        }
+
+        private Controls.NavigationBar GetNavigationBar(ITabbedDocument document)
+        {
+            foreach (Control control in document.Controls)
             {
-                if (control is NavigationBar)
+                if (control is Controls.NavigationBar)
                 {
-                    return control as NavigationBar;
+                    return control as Controls.NavigationBar;
                 }
             }
             return null;
-        }
-
-        private void UpdateNavigationBarSettings()
-        {
-            foreach (var document in FlashDevelop.Globals.MainForm.Documents)
-            {
-                DockContent content = document as DockContent;
-                if (content != null)
-                {
-                    NavigationBar navBar = GetNavigationBar(content);
-                    navBar.UpdateSettings(settingObject);
-                }
-            }
         }
 
         #endregion
@@ -205,9 +207,9 @@ namespace NavigationBar
         /// </summary>
         public void InitBasics()
         {
-            String dataPath = Path.Combine(PathHelper.DataDir, pluginName);
+            String dataPath = Path.Combine(PathHelper.DataDir, NAME);
             if (!Directory.Exists(dataPath)) Directory.CreateDirectory(dataPath);
-            this.settingFilename = Path.Combine(dataPath, "Settings.fdb");
+            this._settingFilename = Path.Combine(dataPath, "Settings.fdb");
         }
 
         /// <summary>
@@ -216,28 +218,28 @@ namespace NavigationBar
         public void AddEventHandlers()
         {
             // Set events you want to listen (combine as flags)
-            EventManager.AddEventHandler(this, EventType.FileOpen | EventType.Command);
+            EventManager.AddEventHandler(this, EventType.FileOpen | EventType.FileSwitch);
         }
 
         /// <summary>
         /// Adds shortcuts for manipulating the navigation bar
         /// </summary>
-        public void AddShortCuts()
+        public void CreateMenuItems()
         {
             ToolStripMenuItem menu = (ToolStripMenuItem)PluginBase.MainForm.FindMenuItem("SearchMenu");
             ToolStripMenuItem menuItem;
 
-            menuItem = new ToolStripMenuItem("Open Imports", null, new EventHandler(OpenImports));
+            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.OpenImports"), null, new EventHandler(OpenImports));
             menuItem.Visible = false;
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenImports", menuItem);
             menu.DropDownItems.Add(menuItem);
 
-            menuItem = new ToolStripMenuItem("Open Classes", null, new EventHandler(OpenClasses));
+            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.OpenClasses"), null, new EventHandler(OpenClasses));
             menuItem.Visible = false;
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenClasses", menuItem);
             menu.DropDownItems.Add(menuItem);
 
-            menuItem = new ToolStripMenuItem("Open Members", null,new EventHandler(OpenMembers));
+            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.OpenMembers"), null, new EventHandler(OpenMembers));
             menuItem.Visible = false;
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenMembers", menuItem);
             menu.DropDownItems.Add(menuItem);
@@ -248,14 +250,13 @@ namespace NavigationBar
         /// </summary>
         public void LoadSettings()
         {
-            this.settingObject = new Settings();
-            if (!File.Exists(this.settingFilename)) this.SaveSettings();
+            this._settings = new Settings();
+            if (!File.Exists(this._settingFilename)) this.SaveSettings();
             else
             {
-                Object obj = ObjectSerializer.Deserialize(this.settingFilename, this.settingObject);
-                this.settingObject = (Settings)obj;
+                Object obj = ObjectSerializer.Deserialize(this._settingFilename, this._settings);
+                this._settings = (Settings)obj;
             }
-            this.settingObject.OnSettingsChanged += new SettingsChangesEvent(UpdateNavigationBarSettings);
         }
 
         /// <summary>
@@ -263,11 +264,9 @@ namespace NavigationBar
         /// </summary>
         public void SaveSettings()
         {
-            ObjectSerializer.Serialize(this.settingFilename, this.settingObject);
+            ObjectSerializer.Serialize(this._settingFilename, this._settings);
         }
 
 		#endregion
-
 	}
-	
 }

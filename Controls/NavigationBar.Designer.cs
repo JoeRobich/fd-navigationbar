@@ -1,4 +1,4 @@
-﻿namespace NavigationBar
+﻿namespace NavigationBar.Controls
 {
     partial class NavigationBar
     {

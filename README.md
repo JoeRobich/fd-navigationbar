@@ -5,9 +5,10 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
 ## Download
-[Version 1.9](http://goo.gl/etaZn)
+[Version 2.0](http://goo.gl/etaZn)
 
 ## History
+**v2.0** - Added a context menu to quickly access settings.
 **v1.9** - Added an option to ignore underscores at the beginning of member/class names when navigating a dropdown with keys.
 **v1.8** - Pressing a key now iterates through the items that begin with the press key. Added the option to label properties the same way as functions.  
 **v1.7** - Opening imports should work in more cases now.  
