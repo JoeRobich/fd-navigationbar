@@ -16,6 +16,7 @@ namespace NavigationBar
         [field: NonSerialized]
         public event SettingsChangesEvent OnSettingsChanged;
 
+        private const bool DEFAULT_SHOW_NAVIGATION_TOOLBAR = false;
         private const bool DEFAULT_SHOW_IMPORTED_CLASSES = false;
         private const bool DEFAULT_SHOW_SUPER_CLASSES = false;
         private const bool DEFAULT_SHOW_INHERITED_MEMBERS = false;
@@ -24,6 +25,7 @@ namespace NavigationBar
         private const bool DEFAULT_IGNORE_UNDERSCORE = false;
         private const OutlineSorting DEFAULT_MEMBER_SORT_METHOD = OutlineSorting.Sorted;
 
+        private bool _showNavigationToolbar = DEFAULT_SHOW_NAVIGATION_TOOLBAR;
         private bool _showImportedClasses = DEFAULT_SHOW_IMPORTED_CLASSES;
         private bool _showSuperClasses = DEFAULT_SHOW_SUPER_CLASSES;
         private bool _showInheritedMembers = DEFAULT_SHOW_INHERITED_MEMBERS;
@@ -31,6 +33,23 @@ namespace NavigationBar
         private bool _labelPropertiesLikeFunctions = DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS;
         private bool _ignoreUnderscore = DEFAULT_IGNORE_UNDERSCORE;
         private OutlineSorting _memberSortMethod = DEFAULT_MEMBER_SORT_METHOD;
+
+        [LocalizedCategory("NavigationBar.Category.Visibility")]
+        [LocalizedDisplayName("NavigationBar.Label.ShowNavigationToolbar")]
+        [LocalizedDescription("NavigationBar.Description.ShowNavigationToolbar")]
+        [DefaultValue(DEFAULT_SHOW_NAVIGATION_TOOLBAR)]
+        public bool ShowNavigationToolbar
+        {
+            get { return _showNavigationToolbar; }
+            set
+            {
+                if (_showNavigationToolbar != value)
+                {
+                    _showNavigationToolbar = value;
+                    FireChanged();
+                }
+            }
+        }
 
         [LocalizedCategory("NavigationBar.Category.Visibility")]
         [LocalizedDisplayName("NavigationBar.Label.ShowImportedClasses")]

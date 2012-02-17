@@ -138,6 +138,9 @@
   <data name="NavigationBar.Description.ShowInheritedMembers" xml:space="preserve">
     <value>Whether the member dropdown is populated with inherited members.</value>
   </data>
+  <data name="NavigationBar.Description.ShowNavigationToolbar" xml:space="preserve">
+    <value>Whether to show navigate forward and backward toolbar buttons.</value>
+  </data>
   <data name="NavigationBar.Description.ShowQualifiedClassNames" xml:space="preserve">
     <value>Whether to show the qualified class names in the dropdowns.</value>
   </data>
@@ -153,6 +156,12 @@
   <data name="NavigationBar.Label.LabelPropertiesLikeFunctions" xml:space="preserve">
     <value>Label Properties Like Functions</value>
   </data>
+  <data name="NavigationBar.Label.NavigateBackward" xml:space="preserve">
+    <value>Navigate Backward</value>
+  </data>
+  <data name="NavigationBar.Label.NavigateForward" xml:space="preserve">
+    <value>Navigate Forward</value>
+  </data>
   <data name="NavigationBar.Label.OpenClasses" xml:space="preserve">
     <value>Open Classes</value>
   </data>
@@ -167,6 +176,9 @@
   </data>
   <data name="NavigationBar.Label.ShowInheritedMembers" xml:space="preserve">
     <value>Show Inherited Members</value>
+  </data>
+  <data name="NavigationBar.Label.ShowNavigationToolbar" xml:space="preserve">
+    <value>Show Navigation Toolbar</value>
   </data>
   <data name="NavigationBar.Label.ShowQualifiedClassNames" xml:space="preserve">
     <value>Show Qualified Class Names</value>

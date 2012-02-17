@@ -17,13 +17,14 @@ using PluginCore;
 
 namespace NavigationBar.Controls
 {
-    public partial class NavigationBar : UserControl
+    public partial class NavigationBar : UserControl, IDisposable
     {
         private ImageList _icons = null;
         private bool _updating = false;
         private int _lastPosition = -1;
         private bool _textChanged = false;
         private bool _completeBuild = false;
+        private bool _disposed = false;
 
         private Settings _settings = null;
         private MemberTreeNodeComparer _memberSort = null;
@@ -128,11 +129,19 @@ namespace NavigationBar.Controls
             _icons.Images.SetKeyName(22, "Declaration.png");
         }
 
+        public void Dispose()
+        {
+            // Unhook events and dispose of ourselves
+            updateTimer.Stop();
+            UnhookEvents();
+            base.Dispose();
+        }
+
         private void Remove()
         {
-            // Unhook events then remove and dispose of ourselves
-            UnhookEvents();
-            this.Parent.Controls.Remove(this);
+            // Remove and dispose of ourselves
+            if (this.Parent != null)
+                this.Parent.Controls.Remove(this);
             this.Dispose();
         }
 

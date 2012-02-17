@@ -12,6 +12,8 @@ using ASCompletion.Context;
 using ASCompletion.Model;
 using NavigationBar.Controls;
 using NavigationBar.Helpers;
+using NavigationBar.Managers;
+using ProjectManager;
 
 namespace NavigationBar
 {
@@ -26,6 +28,10 @@ namespace NavigationBar
 
         private string _settingFilename = "";
         private Settings _settings;
+        private ToolStripButton _navigateForwardButton = null;
+        private ToolStripButton _navigateBackwardButton = null;
+        private ToolStripSeparator _navigateSeparator = null;
+
 
 	    #region Required Properties
 
@@ -99,6 +105,7 @@ namespace NavigationBar
             this.LoadSettings();
             this.AddEventHandlers();
             this.CreateMenuItems();
+            this.CreateToolbarItems();
         }
 		
 		/// <summary>
@@ -114,14 +121,14 @@ namespace NavigationBar
 		/// </summary>
 		public void HandleEvent(Object sender, NotifyEvent e, HandlingPriority prority)
 		{
-            if (e.Type == EventType.FileOpen)
+            if (e.Type == EventType.FileOpen || e.Type == EventType.FileNew)
             {
                 ITabbedDocument document = PluginBase.MainForm.CurrentDocument;
                 if (document != null)
                 {
                     // Check to see if we've already added an NavigationBar to the 
                     // current document.
-                    if (document.SciControl == null || GetNavigationBar(document) != null)
+                    if (document.SciControl == null)
                         return;
 
                     // Dock a new navigation bar to the top of the current document
@@ -134,17 +141,56 @@ namespace NavigationBar
                 ITabbedDocument document = PluginBase.MainForm.CurrentDocument;
                 if (document != null)
                 {
-                    // Check to see if we've already added an NavigationBar to the 
-                    // current document.
-                    if (document.SciControl == null || GetNavigationBar(document) != null)
+                    // Check to see if this document contains a text editor.
+                    if (document.SciControl == null)
                         return;
 
-                    // Dock a new navigation bar to the top of the current document
-                    Controls.NavigationBar bar = new Controls.NavigationBar(_settings);
-                    bar.RefreshSettings();
+                    // Refresh the navigation bar
+                    Controls.NavigationBar bar = GetNavigationBar(document);
+                    if (bar != null)
+                        bar.RefreshSettings();
                 }
             }
+            else if (e.Type == EventType.Command)
+            {
+                DataEvent de = e as DataEvent;
+
+                if (de.Action.StartsWith("ProjectManager."))
+                    if (de.Action == ProjectManagerCommands.NewProject)
+                        NavigationManager.Instance.Clear();
+                    else if (de.Action == ProjectManagerCommands.OpenProject)
+                        NavigationManager.Instance.Clear();
+            }
 		}
+
+        void _settings_OnSettingsChanged()
+        {
+            UpdateNavigationButtons();
+        }
+
+        private void NavigationManager_LocationChanged(object sender, EventArgs e)
+        {
+            UpdateNavigationButtons();
+        }
+
+        private void UpdateNavigationButtons()
+        {
+            _navigateBackwardButton.Enabled = NavigationManager.Instance.CanNavigateBackward;
+            _navigateBackwardButton.Visible = _settings.ShowNavigationToolbar;
+            _navigateForwardButton.Enabled = NavigationManager.Instance.CanNavigateForward;
+            _navigateForwardButton.Visible = _settings.ShowNavigationToolbar;
+            _navigateSeparator.Visible = _settings.ShowNavigationToolbar;
+        }
+
+        void _navigateForwardButton_Click(object sender, EventArgs e)
+        {
+            NavigationManager.Instance.NavigateForward();
+        }
+
+        void _navigateBackwardButton_Click(object sender, EventArgs e)
+        {
+            NavigationManager.Instance.NavigateBackward();
+        }
 		
 		#endregion
 
@@ -218,7 +264,9 @@ namespace NavigationBar
         public void AddEventHandlers()
         {
             // Set events you want to listen (combine as flags)
-            EventManager.AddEventHandler(this, EventType.FileOpen | EventType.FileSwitch);
+            EventManager.AddEventHandler(this, EventType.FileNew | EventType.FileOpen | EventType.FileSwitch | EventType.Command);
+            NavigationManager.Instance.LocationChanged += new EventHandler(NavigationManager_LocationChanged);
+            _settings.OnSettingsChanged += new SettingsChangesEvent(_settings_OnSettingsChanged);
         }
 
         /// <summary>
@@ -243,6 +291,41 @@ namespace NavigationBar
             menuItem.Visible = false;
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenMembers", menuItem);
             menu.DropDownItems.Add(menuItem);
+
+            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), null, new EventHandler(OpenClasses));
+            menuItem.Visible = false;
+            PluginBase.MainForm.RegisterShortcutItem("NavigationBar.NavigateForward", menuItem);
+            menu.DropDownItems.Add(menuItem);
+
+            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), null, new EventHandler(OpenMembers));
+            menuItem.Visible = false;
+            PluginBase.MainForm.RegisterShortcutItem("NavigationBar.NavigateBackward", menuItem);
+            menu.DropDownItems.Add(menuItem);
+        }
+
+        public void CreateToolbarItems()
+        {
+            ToolStripButton navigateButton;
+
+            navigateButton = (ToolStripButton)PluginBase.MainForm.FindMenuItem("ToggleBookmark");
+            int index = PluginBase.MainForm.ToolStrip.Items.IndexOf(navigateButton);
+
+            _navigateBackwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), PluginBase.MainForm.FindImage("315|1|-3|3"));
+            _navigateBackwardButton.Name = "NavigateBackward";
+            _navigateBackwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            _navigateBackwardButton.Click += new EventHandler(_navigateBackwardButton_Click);
+            PluginBase.MainForm.ToolStrip.Items.Insert(index, _navigateBackwardButton);
+
+            _navigateForwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), PluginBase.MainForm.FindImage("315|9|3|3"));
+            _navigateForwardButton.Name = "NavigateForward";
+            _navigateForwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            _navigateForwardButton.Click += new EventHandler(_navigateForwardButton_Click);
+            PluginBase.MainForm.ToolStrip.Items.Insert(index + 1, _navigateForwardButton);
+
+            _navigateSeparator = new ToolStripSeparator();
+            PluginBase.MainForm.ToolStrip.Items.Insert(index + 2, _navigateSeparator);
+
+            UpdateNavigationButtons();
         }
 
         /// <summary>
