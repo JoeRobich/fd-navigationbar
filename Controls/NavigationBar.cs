@@ -422,6 +422,8 @@ namespace NavigationBar.Controls
 
         private void BuildClassDropDown()
         {
+            classComboBox.BeginUpdate();
+
             classComboBox.Items.Clear();
 
             if (ASContext.Context.CurrentModel != null)
@@ -466,6 +468,8 @@ namespace NavigationBar.Controls
 
             // Select the class that contains the caret
             UpdateClassDropDown();
+
+            classComboBox.EndUpdate();
         }
 
         private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited, bool isImported)
@@ -479,6 +483,8 @@ namespace NavigationBar.Controls
 
         private void BuildMemberDropDown()
         {
+            memberComboBox.BeginUpdate();
+
             memberComboBox.Items.Clear();
 
             MemberList members = null;
@@ -523,6 +529,8 @@ namespace NavigationBar.Controls
 
             // Select the member that contains the caret
             UpdateMemberDropDown();
+
+            memberComboBox.EndUpdate();
         }
 
         private List<MemberTreeNode> GetInheritedMembers(ClassModel classModel)
