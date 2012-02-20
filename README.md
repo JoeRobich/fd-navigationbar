@@ -8,7 +8,7 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 [Version 2.1.1](http://goo.gl/etaZn)
 
 ## History
-**v2.1.1** - Fixed issue with additional bars being added when a file was moved. Fixed shortcut keys opening dropdowns. Changed control to a ToolStrip.
+**v2.1.1** - Fixed issue with additional bars being added when a file was moved. Fixed shortcut keys opening dropdowns. Changed control to a ToolStrip.  
 **v2.1** - Added optional navigation toolbar for moving back and forth through the navigation history. Fixed dropdown text flickering when editing.  
 **v2.0.1** - Fixed bug where the bar did not get added to previously open files.  
 **v2.0** - Added a context menu to quickly access settings.  
