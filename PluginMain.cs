@@ -131,8 +131,12 @@ namespace NavigationBar
                     if (document.SciControl == null)
                         return;
 
+                    Controls.NavigationBar bar = GetNavigationBar(document);
+                    if (bar != null)
+                        return;
+
                     // Dock a new navigation bar to the top of the current document
-                    Controls.NavigationBar bar = new Controls.NavigationBar(_settings);
+                    bar = new Controls.NavigationBar(_settings);
                     document.Controls.Add(bar);
                 }
             }
@@ -226,7 +230,7 @@ namespace NavigationBar
         private Controls.NavigationBar GetNavigationBar()
         {
             ITabbedDocument document = PluginBase.MainForm.CurrentDocument;
-            if (document != null)
+            if (document == null)
                 return null;
 
             return GetNavigationBar(document);

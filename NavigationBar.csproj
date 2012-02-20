@@ -47,10 +47,7 @@
     <Compile Include="Helpers\ResourceHelper.cs" />
     <Compile Include="Localization\Attributes.cs" />
     <Compile Include="Controls\NavigationBar.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Controls\NavigationBar.Designer.cs">
-      <DependentUpon>NavigationBar.cs</DependentUpon>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Managers\NavigationManager.cs" />
     <Compile Include="PluginMain.cs" />
@@ -58,9 +55,6 @@
     <Compile Include="Settings.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Controls\NavigationBar.resx">
-      <DependentUpon>NavigationBar.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Resources\en_US.resx">
     </EmbeddedResource>
   </ItemGroup>

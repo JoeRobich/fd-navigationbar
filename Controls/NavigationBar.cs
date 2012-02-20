@@ -17,7 +17,7 @@ using PluginCore;
 
 namespace NavigationBar.Controls
 {
-    public partial class NavigationBar : UserControl, IDisposable
+    public partial class NavigationBar : ToolStrip, IDisposable
     {
         private ImageList _icons = null;
         private bool _updating = false;
@@ -25,6 +25,11 @@ namespace NavigationBar.Controls
         private bool _textChanged = false;
         private bool _completeBuild = false;
         private bool _disposed = false;
+
+        private System.Windows.Forms.ToolStripSpringComboBox importComboBox;
+        private System.Windows.Forms.ToolStripSpringComboBox classComboBox;
+        private System.Windows.Forms.ToolStripSpringComboBox memberComboBox;
+        private System.Windows.Forms.Timer updateTimer;
 
         private Settings _settings = null;
         private MemberTreeNodeComparer _memberSort = null;
@@ -51,12 +56,11 @@ namespace NavigationBar.Controls
             InitializeComponent();
             InitializeContextMenu();
             InitializeIcons();
-            
-            // We should remain invisible until we determine that we are in a code file.
-            this.Visible = false;
 
-            // We should be docked at the top of the container.
-            this.Dock = DockStyle.Top;
+            this.Renderer = new DockPanelStripRenderer();
+            this.importComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
+            this.classComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
+            this.memberComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
 
             _scintilla = PluginBase.MainForm.CurrentDocument.SciControl;
             _fileModel = ASContext.Context.CurrentModel;
@@ -66,6 +70,68 @@ namespace NavigationBar.Controls
             RefreshSettings();
             HookEvents();
             updateTimer.Start();
+        }
+
+        private void InitializeComponent()
+        {
+            importComboBox = new System.Windows.Forms.ToolStripSpringComboBox();
+            classComboBox = new System.Windows.Forms.ToolStripSpringComboBox();
+            memberComboBox = new System.Windows.Forms.ToolStripSpringComboBox();
+            updateTimer = new System.Windows.Forms.Timer();
+
+            this.SuspendLayout();
+
+            // 
+            // importComboBox
+            // 
+            this.importComboBox.ComboBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            this.importComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.importComboBox.MaxDropDownItems = 25;
+            this.importComboBox.Name = "importComboBox";
+            this.importComboBox.ComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
+            this.importComboBox.ComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
+            this.importComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
+            this.importComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
+            // 
+            // classComboBox
+            // 
+            this.classComboBox.ComboBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            this.classComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.classComboBox.MaxDropDownItems = 25;
+            this.classComboBox.Name = "classComboBox";
+            this.classComboBox.ComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
+            this.classComboBox.ComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
+            this.classComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
+            this.classComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
+            // 
+            // memberComboBox
+            // 
+            this.memberComboBox.ComboBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            this.memberComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.memberComboBox.MaxDropDownItems = 25;
+            this.memberComboBox.Name = "memberComboBox";
+            this.memberComboBox.Padding = new System.Windows.Forms.Padding(0, 0, 0, 1);
+            this.memberComboBox.ComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
+            this.memberComboBox.ComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
+            this.memberComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
+            this.memberComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
+            // 
+            // updateTimer
+            // 
+            this.updateTimer.Tick += new System.EventHandler(this.updateTimer_Tick);
+            // 
+            // NavigationBar
+            // 
+            this.CanOverflow = false;
+            this.Dock = System.Windows.Forms.DockStyle.Top;
+            this.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+                importComboBox, classComboBox, memberComboBox });
+            this.Name = "NavigationBar";
+            this.Padding = new System.Windows.Forms.Padding(1, 1, 2, 2);
+            this.Stretch = true;
+            this.Visible = false;
+            this.ResumeLayout(false);
         }
 
         private void InitializeContextMenu()
@@ -308,7 +374,7 @@ namespace NavigationBar.Controls
 
         private void comboBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            ComboBox comboBox = (ComboBox)sender;
+            ComboBox comboBox = ((ToolStripSpringComboBox)sender).ComboBox;
             string searchKey = e.KeyChar.ToString();
 
             // If shift is pressed then reverse search
@@ -372,14 +438,20 @@ namespace NavigationBar.Controls
 
         private void ShowImportDropDown()
         {
-            tablePanel.ColumnStyles[0].SizeType = SizeType.Percent;
-            tablePanel.ColumnStyles[0].Width = 33.33f;
+            if (!this.Items.Contains(importComboBox))
+            {
+                importComboBox.Visible = true;
+                this.Items.Insert(0, importComboBox);
+            }
         }
 
         private void HideImportDropDown()
         {
-            tablePanel.ColumnStyles[0].SizeType = SizeType.Absolute;
-            tablePanel.ColumnStyles[0].Width = 0f;
+            if (this.Items.Contains(importComboBox))
+            {
+                importComboBox.Visible = false;
+                this.Items.Remove(importComboBox);
+            }
         }
 
         private void BuildDropDowns()
@@ -756,10 +828,10 @@ namespace NavigationBar.Controls
             _memberSort = MemberTreeNodeComparer.GetComparer(_settings.MemberSortMethod);
 
             // Show the imported dropdown if it is not visible
-            if (_settings.ShowImportedClasses && tablePanel.ColumnStyles[0].SizeType == SizeType.Absolute)
+            if (_settings.ShowImportedClasses)
                 ShowImportDropDown();
             // Hide the imported dropdown if it is visible
-            else if (!_settings.ShowImportedClasses && tablePanel.ColumnStyles[0].SizeType == SizeType.Percent)
+            else if (!_settings.ShowImportedClasses)
                 HideImportDropDown();
 
             // Forces a rebuild of the dropdowns
