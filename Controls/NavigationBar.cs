@@ -842,7 +842,8 @@ namespace NavigationBar.Controls
         private void UpdateNavigationBar()
         {
             // Only update if we are the visible document
-            if (PluginBase.MainForm.CurrentDocument.SciControl != _scintilla)
+            if (PluginBase.MainForm.CurrentDocument == null ||
+                PluginBase.MainForm.CurrentDocument.SciControl != _scintilla)
             {
                 _textChanged = false;
                 updateTimer.Stop();
