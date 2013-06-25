@@ -35,7 +35,7 @@ namespace NavigationBar.Controls
         private MemberTreeNodeComparer _memberSort = null;
 
         private FileModel _fileModel = null;
-        private ScintillaControl _scintilla = null;
+        private ITabbedDocument _document = null;
 
         private TreeNode _lastSelectedClassNode = null;
         private TreeNode _lastSelectedMemberNode = null;
@@ -51,7 +51,7 @@ namespace NavigationBar.Controls
 
         #region Initializing and Disposing
 
-        public NavigationBar(Settings settings)
+        public NavigationBar(ITabbedDocument document, Settings settings)
         {
             InitializeComponent();
             InitializeContextMenu();
@@ -62,7 +62,7 @@ namespace NavigationBar.Controls
             this.classComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
             this.memberComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
 
-            _scintilla = PluginBase.MainForm.CurrentDocument.SciControl;
+            _document = document;
             _fileModel = ASContext.Context.CurrentModel;
 
             _settings = settings;
@@ -319,11 +319,12 @@ namespace NavigationBar.Controls
         private void HookEvents()
         {
             // Check for whether the cursor has moved
-            _scintilla.UpdateUI += new UpdateUIHandler(_scintella_UpdateUI);
+            _document.SplitSci1.UpdateUI += new UpdateUIHandler(_scintella_UpdateUI);
+            _document.SplitSci2.UpdateUI += new UpdateUIHandler(_scintella_UpdateUI);
 
             // The code has changed so we will need to rebuild the dropdowns
-            _scintilla.TextInserted += new TextInsertedHandler(_scintilla_TextChanged);
-            _scintilla.TextDeleted += new TextDeletedHandler(_scintilla_TextChanged);
+            _document.SplitSci1.TextInserted += new TextInsertedHandler(_scintilla_TextChanged);
+            _document.SplitSci1.TextDeleted += new TextDeletedHandler(_scintilla_TextChanged);
 
             _settings.OnSettingsChanged += new SettingsChangesEvent(_settings_OnSettingsChanged);
         }
@@ -331,9 +332,11 @@ namespace NavigationBar.Controls
         private void UnhookEvents()
         {
             // We are not in a code file so we should unhook
-            _scintilla.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
-            _scintilla.TextInserted -= new TextInsertedHandler(_scintilla_TextChanged);
-            _scintilla.TextDeleted -= new TextDeletedHandler(_scintilla_TextChanged);
+            _document.SplitSci1.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
+            _document.SplitSci2.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
+
+            _document.SplitSci1.TextInserted -= new TextInsertedHandler(_scintilla_TextChanged);
+            _document.SplitSci1.TextDeleted -= new TextDeletedHandler(_scintilla_TextChanged);
 
             _settings.OnSettingsChanged += new SettingsChangesEvent(_settings_OnSettingsChanged);
         }
@@ -368,7 +371,7 @@ namespace NavigationBar.Controls
 
         private void comboBox_DropDownClosed(object sender, EventArgs e)
         {
-            _scintilla.Focus();
+            _document.SciControl.Focus();
             ResetDropDowns();
         }
 
@@ -674,7 +677,7 @@ namespace NavigationBar.Controls
             }
 
             // get the line the caret is on
-            int line = _scintilla.LineFromPosition(_scintilla.CurrentPos);
+            int line = _document.SciControl.LineFromPosition(_document.SciControl.CurrentPos);
 
             foreach (MemberTreeNode classNode in classComboBox.Items)
             {
@@ -706,7 +709,7 @@ namespace NavigationBar.Controls
             MemberTreeNode selectedNode = null;
 
             // get the line the caret is on
-            int line = _scintilla.LineFromPosition(_scintilla.CurrentPos);
+            int line = _document.SciControl.LineFromPosition(_document.SciControl.CurrentPos);
 
             foreach (MemberTreeNode memberNode in memberComboBox.Items)
             {
@@ -842,8 +845,7 @@ namespace NavigationBar.Controls
         private void UpdateNavigationBar()
         {
             // Only update if we are the visible document
-            if (PluginBase.MainForm.CurrentDocument == null ||
-                PluginBase.MainForm.CurrentDocument.SciControl != _scintilla)
+            if (PluginBase.MainForm.CurrentDocument != _document)
             {
                 _textChanged = false;
                 updateTimer.Stop();
@@ -897,9 +899,9 @@ namespace NavigationBar.Controls
             }
 
             // Update the dropdowns if the caret position has changed
-            if (_scintilla.CurrentPos != _lastPosition)
+            if (_document.SciControl.CurrentPos != _lastPosition)
             {
-                _lastPosition = _scintilla.CurrentPos;
+                _lastPosition = _document.SciControl.CurrentPos;
                 UpdateDropDowns();
             }
 

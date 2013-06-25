@@ -30,7 +30,6 @@ namespace NavigationBar
         private Settings _settings;
         private ToolStripButton _navigateForwardButton = null;
         private ToolStripButton _navigateBackwardButton = null;
-        private ToolStripSeparator _navigateSeparator = null;
 
 
 	    #region Required Properties
@@ -136,7 +135,7 @@ namespace NavigationBar
                         return;
 
                     // Dock a new navigation bar to the top of the current document
-                    bar = new Controls.NavigationBar(_settings);
+                    bar = new Controls.NavigationBar(document, _settings);
                     document.Controls.Add(bar);
                 }
             }
@@ -183,7 +182,6 @@ namespace NavigationBar
             _navigateBackwardButton.Visible = _settings.ShowNavigationToolbar;
             _navigateForwardButton.Enabled = NavigationManager.Instance.CanNavigateForward;
             _navigateForwardButton.Visible = _settings.ShowNavigationToolbar;
-            _navigateSeparator.Visible = _settings.ShowNavigationToolbar;
         }
 
         void _navigateForwardButton_Click(object sender, EventArgs e)
@@ -309,25 +307,17 @@ namespace NavigationBar
 
         public void CreateToolbarItems()
         {
-            ToolStripButton navigateButton;
-
-            navigateButton = (ToolStripButton)PluginBase.MainForm.FindMenuItem("ToggleBookmark");
-            int index = PluginBase.MainForm.ToolStrip.Items.IndexOf(navigateButton);
-
             _navigateBackwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), PluginBase.MainForm.FindImage("315|1|-3|3"));
             _navigateBackwardButton.Name = "NavigateBackward";
             _navigateBackwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _navigateBackwardButton.Click += new EventHandler(_navigateBackwardButton_Click);
-            PluginBase.MainForm.ToolStrip.Items.Insert(index, _navigateBackwardButton);
+            PluginBase.MainForm.ToolStrip.Items.Add(_navigateBackwardButton);
 
             _navigateForwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), PluginBase.MainForm.FindImage("315|9|3|3"));
             _navigateForwardButton.Name = "NavigateForward";
             _navigateForwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _navigateForwardButton.Click += new EventHandler(_navigateForwardButton_Click);
-            PluginBase.MainForm.ToolStrip.Items.Insert(index + 1, _navigateForwardButton);
-
-            _navigateSeparator = new ToolStripSeparator();
-            PluginBase.MainForm.ToolStrip.Items.Insert(index + 2, _navigateSeparator);
+            PluginBase.MainForm.ToolStrip.Items.Add(_navigateForwardButton);
 
             UpdateNavigationButtons();
         }
