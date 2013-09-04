@@ -871,21 +871,13 @@ namespace NavigationBar.Controls
 
             // If we haven't performed a build after dependencies have been resolved
             if (!_completeBuild &&
-                ASContext.Context.CurrentModel.GetPublicClass().Extends != ClassModel.VoidClass)
+                ASContext.Context.CurrentModel.GetPublicClass() != ClassModel.VoidClass)
             {
                 _completeBuild = true;
 
-                // If the text has changed and we need to rebuild or
-                // We need to show inherited classes or members
-                if (_textChanged ||
-                    _settings.ShowImportedClasses ||
-                    _settings.ShowInheritedMembers ||
-                    _settings.ShowSuperClasses)
-                {
-                    _textChanged = false;
-                    updateTimer.Stop();
-                    BuildDropDowns();
-                }
+                _textChanged = false;
+                updateTimer.Stop();
+                BuildDropDowns();
             }
             // Rebuild the dropdowns if the text changed and the model has updated
             else if (_textChanged &&

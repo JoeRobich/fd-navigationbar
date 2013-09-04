@@ -5,9 +5,10 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
 ## Download
-[Version 2.1.2](http://goo.gl/etaZn)
+[Version 2.2](http://goo.gl/etaZn)
 
 ## History
+**v2.2** - Updated to work with split view. The cursor is now tracked in all editors. Changing the dropdowns will navigate within the active editor.
 **v2.1.2** - Now targets the .Net 2.0 Framework.  
 **v2.1.1** - Fixed issue with additional bars being added when a file was moved. Fixed shortcut keys opening dropdowns. Changed control to a ToolStrip.  
 **v2.1** - Added optional navigation toolbar for moving back and forth through the navigation history. Fixed dropdown text flickering when editing.  
