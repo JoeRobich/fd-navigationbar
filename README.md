@@ -8,6 +8,7 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 [Version 2.2](http://goo.gl/etaZn)
 
 ## History
+**v2.2.1** - Fixed issue running with FD4.5. Moved icon resource into the plugin.  
 **v2.2** - Updated to work with split view. The cursor is now tracked in all editors. Changing the dropdowns will navigate within the active editor.  
 **v2.1.2** - Now targets the .Net 2.0 Framework.  
 **v2.1.1** - Fixed issue with additional bars being added when a file was moved. Fixed shortcut keys opening dropdowns. Changed control to a ToolStrip.  
