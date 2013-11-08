@@ -14,6 +14,7 @@ using ASCompletion.Settings;
 using NavigationBar.Helpers;
 using PluginCore.Localization;
 using PluginCore;
+using System.Reflection;
 
 namespace NavigationBar.Controls
 {
@@ -166,33 +167,54 @@ namespace NavigationBar.Controls
         private void InitializeIcons()
         {
             //Pull the member icons from the resources;
-            ComponentResourceManager resources = new ComponentResourceManager(typeof(ASCompletion.PluginUI));
             _icons = new ImageList();
-            _icons.ImageStream = ((ImageListStreamer)(resources.GetObject("treeIcons.ImageStream")));
             _icons.TransparentColor = Color.Transparent;
-            _icons.Images.SetKeyName(0, "FilePlain.png");
-            _icons.Images.SetKeyName(1, "FolderClosed.png");
-            _icons.Images.SetKeyName(2, "FolderOpen.png");
-            _icons.Images.SetKeyName(3, "CheckAS.png");
-            _icons.Images.SetKeyName(4, "QuickBuild.png");
-            _icons.Images.SetKeyName(5, "Package.png");
-            _icons.Images.SetKeyName(6, "Interface.png");
-            _icons.Images.SetKeyName(7, "Intrinsic.png");
-            _icons.Images.SetKeyName(8, "Class.png");
-            _icons.Images.SetKeyName(9, "Variable.png");
-            _icons.Images.SetKeyName(10, "VariableProtected.png");
-            _icons.Images.SetKeyName(11, "VariablePrivate.png");
-            _icons.Images.SetKeyName(12, "Const.png");
-            _icons.Images.SetKeyName(13, "ConstProtected.png");
-            _icons.Images.SetKeyName(14, "ConstPrivate.png");
-            _icons.Images.SetKeyName(15, "Method.png");
-            _icons.Images.SetKeyName(16, "MethodProtected.png");
-            _icons.Images.SetKeyName(17, "MethodPrivate.png");
-            _icons.Images.SetKeyName(18, "Property.png");
-            _icons.Images.SetKeyName(19, "PropertyProtected.png");
-            _icons.Images.SetKeyName(20, "PropertyPrivate.png");
-            _icons.Images.SetKeyName(21, "Template.png");
-            _icons.Images.SetKeyName(22, "Declaration.png");
+            _icons.Images.AddRange(new Bitmap[] {
+                new Bitmap(GetStream("FilePlain.png")),
+                new Bitmap(GetStream("FolderClosed.png")),
+                new Bitmap(GetStream("FolderOpen.png")),
+                new Bitmap(GetStream("CheckAS.png")),
+                new Bitmap(GetStream("QuickBuild.png")),
+                new Bitmap(GetStream("Package.png")),
+                new Bitmap(GetStream("Interface.png")),
+                new Bitmap(GetStream("Intrinsic.png")),
+                new Bitmap(GetStream("Class.png")),
+                new Bitmap(GetStream("Variable.png")),
+                new Bitmap(GetStream("VariableProtected.png")),
+                new Bitmap(GetStream("VariablePrivate.png")),
+                new Bitmap(GetStream("VariableStatic.png")),
+                new Bitmap(GetStream("VariableStaticProtected.png")),
+                new Bitmap(GetStream("VariableStaticPrivate.png")),
+                new Bitmap(GetStream("Const.png")),
+                new Bitmap(GetStream("ConstProtected.png")),
+                new Bitmap(GetStream("ConstPrivate.png")),
+                new Bitmap(GetStream("Const.png")),
+                new Bitmap(GetStream("ConstProtected.png")),
+                new Bitmap(GetStream("ConstPrivate.png")),
+                new Bitmap(GetStream("Method.png")),
+                new Bitmap(GetStream("MethodProtected.png")),
+                new Bitmap(GetStream("MethodPrivate.png")),
+                new Bitmap(GetStream("MethodStatic.png")),
+                new Bitmap(GetStream("MethodStaticProtected.png")),
+                new Bitmap(GetStream("MethodStaticPrivate.png")),
+                new Bitmap(GetStream("Property.png")),
+                new Bitmap(GetStream("PropertyProtected.png")),
+                new Bitmap(GetStream("PropertyPrivate.png")),
+                new Bitmap(GetStream("PropertyStatic.png")),
+                new Bitmap(GetStream("PropertyStaticProtected.png")),
+                new Bitmap(GetStream("PropertyStaticPrivate.png")),
+                new Bitmap(GetStream("Template.png")),
+                new Bitmap(GetStream("Declaration.png"))
+            });
+        }
+
+        public static System.IO.Stream GetStream(String name)
+        {
+            String prefix = "NavigationBar.Icons.";
+            List<string> resources = new List<string>(Assembly.GetExecutingAssembly().GetManifestResourceNames());
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            var stream = assembly.GetManifestResourceStream(prefix + name);
+            return stream;
         }
 
         public void Dispose()
@@ -640,7 +662,7 @@ namespace NavigationBar.Controls
         private MemberTreeNode GetMemberTreeNode(MemberModel memberModel, ClassModel classModel)
         {
             MemberTreeNode node = null;
-            int imageIndex = ASCompletion.PluginUI.GetMemberIcon(memberModel.Flags, memberModel.Access);
+            int imageIndex = ASCompletion.PluginUI.GetIcon(memberModel.Flags, memberModel.Access);
 
             if (imageIndex != 0)
             {
