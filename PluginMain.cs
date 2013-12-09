@@ -184,12 +184,12 @@ namespace NavigationBar
             _navigateForwardButton.Visible = _settings.ShowNavigationToolbar;
         }
 
-        void _navigateForwardButton_Click(object sender, EventArgs e)
+        void NavigateForward(object sender, EventArgs e)
         {
             NavigationManager.Instance.NavigateForward();
         }
 
-        void _navigateBackwardButton_Click(object sender, EventArgs e)
+        void NavigateBackward(object sender, EventArgs e)
         {
             NavigationManager.Instance.NavigateBackward();
         }
@@ -294,12 +294,12 @@ namespace NavigationBar
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.OpenMembers", menuItem);
             menu.DropDownItems.Add(menuItem);
 
-            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), null, new EventHandler(OpenClasses));
+            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), null, new EventHandler(NavigateForward));
             menuItem.Visible = false;
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.NavigateForward", menuItem);
             menu.DropDownItems.Add(menuItem);
 
-            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), null, new EventHandler(OpenMembers));
+            menuItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), null, new EventHandler(NavigateBackward));
             menuItem.Visible = false;
             PluginBase.MainForm.RegisterShortcutItem("NavigationBar.NavigateBackward", menuItem);
             menu.DropDownItems.Add(menuItem);
@@ -310,13 +310,13 @@ namespace NavigationBar
             _navigateBackwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), PluginBase.MainForm.FindImage("315|1|-3|3"));
             _navigateBackwardButton.Name = "NavigateBackward";
             _navigateBackwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            _navigateBackwardButton.Click += new EventHandler(_navigateBackwardButton_Click);
+            _navigateBackwardButton.Click += new EventHandler(NavigateBackward);
             PluginBase.MainForm.ToolStrip.Items.Add(_navigateBackwardButton);
 
             _navigateForwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), PluginBase.MainForm.FindImage("315|9|3|3"));
             _navigateForwardButton.Name = "NavigateForward";
             _navigateForwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            _navigateForwardButton.Click += new EventHandler(_navigateForwardButton_Click);
+            _navigateForwardButton.Click += new EventHandler(NavigateForward);
             PluginBase.MainForm.ToolStrip.Items.Add(_navigateForwardButton);
 
             UpdateNavigationButtons();
