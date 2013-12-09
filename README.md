@@ -5,9 +5,10 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
 ## Download
-[Version 2.2](http://goo.gl/etaZn)
+[Version 2.2.2](http://goo.gl/etaZn)
 
 ## History
+**v2.2.2** - Fixed out of memory bug when finding all references.  
 **v2.2.1** - Fixed issue running with FD4.5. Moved icon resource into the plugin.  
 **v2.2** - Updated to work with split view. The cursor is now tracked in all editors. Changing the dropdowns will navigate within the active editor.  
 **v2.1.2** - Now targets the .Net 2.0 Framework.  

@@ -20,7 +20,7 @@ namespace NavigationBar.Controls
 {
     public partial class NavigationBar : ToolStrip, IDisposable
     {
-        private ImageList _icons = null;
+        private static ImageList _icons = null;
         private bool _updating = false;
         private int _lastPosition = -1;
         private bool _textChanged = false;
@@ -56,7 +56,9 @@ namespace NavigationBar.Controls
         {
             InitializeComponent();
             InitializeContextMenu();
-            InitializeIcons();
+
+            if (_icons == null)
+                InitializeIcons();
 
             this.Renderer = new DockPanelStripRenderer();
             this.importComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
