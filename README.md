@@ -8,7 +8,7 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 [Version 2.3](http://goo.gl/etaZn)
 
 ## History
-**v2.3** - Fixes for High DPI and support for FD Themes.  
+**v2.3** - Fixes for High DPI. Added support for FD Themes. Fixed bug with non-en_US locales.  
 **v2.2.3** - Fixed navigate forward/backward shortcuts.  
 **v2.2.2** - Fixed out of memory bug when finding all references.  
 **v2.2.1** - Fixed issue running with FD4.5. Moved icon resource into the plugin.  
