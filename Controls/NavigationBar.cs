@@ -1,20 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Text;
-using System.Windows.Forms;
-using ASCompletion.Model;
-using ScintillaNet;
+﻿using ASCompletion;
 using ASCompletion.Context;
-using ASCompletion;
-using ASCompletion.Completion;
+using ASCompletion.Model;
 using ASCompletion.Settings;
 using NavigationBar.Helpers;
-using PluginCore.Localization;
 using PluginCore;
+using PluginCore.Helpers;
+using PluginCore.Localization;
+using ScintillaNet;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace NavigationBar.Controls
 {
@@ -27,10 +24,10 @@ namespace NavigationBar.Controls
         private bool _completeBuild = false;
         private bool _disposed = false;
 
-        private System.Windows.Forms.ToolStripSpringComboBox importComboBox;
-        private System.Windows.Forms.ToolStripSpringComboBox classComboBox;
-        private System.Windows.Forms.ToolStripSpringComboBox memberComboBox;
-        private System.Windows.Forms.Timer updateTimer;
+        private ToolStripSpringComboBox importComboBox;
+        private ToolStripSpringComboBox classComboBox;
+        private ToolStripSpringComboBox memberComboBox;
+        private Timer updateTimer;
 
         private Settings _settings = null;
         private MemberTreeNodeComparer _memberSort = null;
@@ -60,10 +57,10 @@ namespace NavigationBar.Controls
             if (_icons == null)
                 InitializeIcons();
 
-            this.Renderer = new DockPanelStripRenderer();
-            this.importComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
-            this.classComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
-            this.memberComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
+            Renderer = new DockPanelStripRenderer();
+            importComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
+            classComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
+            memberComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
 
             _document = document;
             _fileModel = ASContext.Context.CurrentModel;
@@ -77,64 +74,64 @@ namespace NavigationBar.Controls
 
         private void InitializeComponent()
         {
-            importComboBox = new System.Windows.Forms.ToolStripSpringComboBox();
-            classComboBox = new System.Windows.Forms.ToolStripSpringComboBox();
-            memberComboBox = new System.Windows.Forms.ToolStripSpringComboBox();
-            updateTimer = new System.Windows.Forms.Timer();
+            importComboBox = new ToolStripSpringComboBox();
+            classComboBox = new ToolStripSpringComboBox();
+            memberComboBox = new ToolStripSpringComboBox();
+            updateTimer = new Timer();
 
-            this.SuspendLayout();
+            SuspendLayout();
 
             // 
             // importComboBox
             // 
-            this.importComboBox.ComboBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
-            this.importComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.importComboBox.MaxDropDownItems = 25;
-            this.importComboBox.Name = "importComboBox";
-            this.importComboBox.ComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
-            this.importComboBox.ComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
-            this.importComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
-            this.importComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
+            importComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
+            importComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            importComboBox.MaxDropDownItems = 25;
+            importComboBox.Name = "importComboBox";
+            importComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            importComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
+            importComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
+            importComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
             // 
             // classComboBox
             // 
-            this.classComboBox.ComboBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
-            this.classComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.classComboBox.MaxDropDownItems = 25;
-            this.classComboBox.Name = "classComboBox";
-            this.classComboBox.ComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
-            this.classComboBox.ComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
-            this.classComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
-            this.classComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
+            classComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
+            classComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            classComboBox.MaxDropDownItems = 25;
+            classComboBox.Name = "classComboBox";
+            classComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            classComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
+            classComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
+            classComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
             // 
             // memberComboBox
             // 
-            this.memberComboBox.ComboBox.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
-            this.memberComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.memberComboBox.MaxDropDownItems = 25;
-            this.memberComboBox.Name = "memberComboBox";
-            this.memberComboBox.Padding = new System.Windows.Forms.Padding(0, 0, 0, 1);
-            this.memberComboBox.ComboBox.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.comboBox_DrawItem);
-            this.memberComboBox.ComboBox.SelectionChangeCommitted += new System.EventHandler(this.comboBox_SelectionChangeCommitted);
-            this.memberComboBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBox_KeyPress);
-            this.memberComboBox.DropDownClosed += new System.EventHandler(this.comboBox_DropDownClosed);
+            memberComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
+            memberComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            memberComboBox.MaxDropDownItems = 25;
+            memberComboBox.Name = "memberComboBox";
+            memberComboBox.Padding = new Padding(0, 0, 0, 1);
+            memberComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            memberComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
+            memberComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
+            memberComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
             // 
             // updateTimer
             // 
-            this.updateTimer.Tick += new System.EventHandler(this.updateTimer_Tick);
+            updateTimer.Tick += new EventHandler(updateTimer_Tick);
             // 
             // NavigationBar
             // 
-            this.CanOverflow = false;
-            this.Dock = System.Windows.Forms.DockStyle.Top;
-            this.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
-            this.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            CanOverflow = false;
+            Dock = DockStyle.Top;
+            GripStyle = ToolStripGripStyle.Hidden;
+            Items.AddRange(new ToolStripItem[] {
                 importComboBox, classComboBox, memberComboBox });
-            this.Name = "NavigationBar";
-            this.Padding = new System.Windows.Forms.Padding(1, 1, 2, 2);
-            this.Stretch = true;
-            this.Visible = false;
-            this.ResumeLayout(false);
+            Name = "NavigationBar";
+            Padding = new Padding(1, 1, 2, 2);
+            Stretch = true;
+            Visible = false;
+            ResumeLayout(false);
         }
 
         private void InitializeContextMenu()
@@ -163,7 +160,7 @@ namespace NavigationBar.Controls
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(sortItem);
 
-            this.ContextMenuStrip = menu;
+            ContextMenuStrip = menu;
         }
 
         private void InitializeIcons()
@@ -171,48 +168,49 @@ namespace NavigationBar.Controls
             //Pull the member icons from the resources;
             _icons = new ImageList();
             _icons.TransparentColor = Color.Transparent;
+            _icons.ImageSize = ScaleHelper.Scale(new Size(16, 16));
             _icons.Images.AddRange(new Bitmap[] {
-	            new Bitmap(ASCompletion.PluginUI.GetStream("FilePlain.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("FolderClosed.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("FolderOpen.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("CheckAS.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("QuickBuild.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Package.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Interface.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Intrinsic.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Class.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Variable.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("VariableProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("VariablePrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("VariableStatic.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("VariableStaticProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("VariableStaticPrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Const.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("ConstProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("ConstPrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Const.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("ConstProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("ConstPrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Method.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("MethodProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("MethodPrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("MethodStatic.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("MethodStaticProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("MethodStaticPrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Property.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("PropertyProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("PropertyPrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("PropertyStatic.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("PropertyStaticProtected.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("PropertyStaticPrivate.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Template.png")),
-	            new Bitmap(ASCompletion.PluginUI.GetStream("Declaration.png"))
+                new Bitmap(PluginUI.GetStream("FilePlain.png")),
+                new Bitmap(PluginUI.GetStream("FolderClosed.png")),
+                new Bitmap(PluginUI.GetStream("FolderOpen.png")),
+                new Bitmap(PluginUI.GetStream("CheckAS.png")),
+                new Bitmap(PluginUI.GetStream("QuickBuild.png")),
+                new Bitmap(PluginUI.GetStream("Package.png")),
+                new Bitmap(PluginUI.GetStream("Interface.png")),
+                new Bitmap(PluginUI.GetStream("Intrinsic.png")),
+                new Bitmap(PluginUI.GetStream("Class.png")),
+                new Bitmap(PluginUI.GetStream("Variable.png")),
+                new Bitmap(PluginUI.GetStream("VariableProtected.png")),
+                new Bitmap(PluginUI.GetStream("VariablePrivate.png")),
+                new Bitmap(PluginUI.GetStream("VariableStatic.png")),
+                new Bitmap(PluginUI.GetStream("VariableStaticProtected.png")),
+                new Bitmap(PluginUI.GetStream("VariableStaticPrivate.png")),
+                new Bitmap(PluginUI.GetStream("Const.png")),
+                new Bitmap(PluginUI.GetStream("ConstProtected.png")),
+                new Bitmap(PluginUI.GetStream("ConstPrivate.png")),
+                new Bitmap(PluginUI.GetStream("Const.png")),
+                new Bitmap(PluginUI.GetStream("ConstProtected.png")),
+                new Bitmap(PluginUI.GetStream("ConstPrivate.png")),
+                new Bitmap(PluginUI.GetStream("Method.png")),
+                new Bitmap(PluginUI.GetStream("MethodProtected.png")),
+                new Bitmap(PluginUI.GetStream("MethodPrivate.png")),
+                new Bitmap(PluginUI.GetStream("MethodStatic.png")),
+                new Bitmap(PluginUI.GetStream("MethodStaticProtected.png")),
+                new Bitmap(PluginUI.GetStream("MethodStaticPrivate.png")),
+                new Bitmap(PluginUI.GetStream("Property.png")),
+                new Bitmap(PluginUI.GetStream("PropertyProtected.png")),
+                new Bitmap(PluginUI.GetStream("PropertyPrivate.png")),
+                new Bitmap(PluginUI.GetStream("PropertyStatic.png")),
+                new Bitmap(PluginUI.GetStream("PropertyStaticProtected.png")),
+                new Bitmap(PluginUI.GetStream("PropertyStaticPrivate.png")),
+                new Bitmap(PluginUI.GetStream("Template.png")),
+                new Bitmap(PluginUI.GetStream("Declaration.png"))
             });
         }
 
-        public static System.IO.Stream GetStream(String name)
+        public static System.IO.Stream GetStream(string name)
         {
-            String prefix = "NavigationBar.Icons.";
+            string prefix = "NavigationBar.Icons.";
             List<string> resources = new List<string>(Assembly.GetExecutingAssembly().GetManifestResourceNames());
             Assembly assembly = Assembly.GetExecutingAssembly();
             var stream = assembly.GetManifestResourceStream(prefix + name);
@@ -230,9 +228,9 @@ namespace NavigationBar.Controls
         private void Remove()
         {
             // Remove and dispose of ourselves
-            if (this.Parent != null)
-                this.Parent.Controls.Remove(this);
-            this.Dispose();
+            if (Parent != null)
+                Parent.Controls.Remove(this);
+            Dispose();
         }
 
         #endregion
@@ -405,7 +403,7 @@ namespace NavigationBar.Controls
             string searchKey = e.KeyChar.ToString();
 
             // If shift is pressed then reverse search
-            if ((Control.ModifierKeys & Keys.Shift) == 0)
+            if ((ModifierKeys & Keys.Shift) == 0)
             {
                 ForwardSearch(comboBox, searchKey);
             }
@@ -417,44 +415,64 @@ namespace NavigationBar.Controls
 
         private void comboBox_DrawItem(object sender, DrawItemEventArgs e)
         {
+            // Update ForeColor and BackColor if a theme overrides the defaults
+            ComboBox comboBox = sender as ComboBox;
+
+            if (PluginBase.MainForm.GetThemeValue("ToolStripComboBoxControl.ForeColor") != null)
+            {
+                var foreColor = PluginBase.MainForm.GetThemeColor("ToolStripComboBoxControl.ForeColor");
+                if (comboBox.ForeColor != foreColor)
+                    comboBox.ForeColor = foreColor;
+            }
+
+            if (PluginBase.MainForm.GetThemeValue("ToolStripComboBoxControl.BackColor") != null)
+            {
+                var backColor = PluginBase.MainForm.GetThemeColor("ToolStripComboBoxControl.BackColor");
+                if (comboBox.BackColor != backColor)
+                    comboBox.BackColor = backColor;
+            }
+
             // If we drawing an item that exists
             if (e.Index > -1)
             {
-                ComboBox comboBox = sender as ComboBox;
                 MemberTreeNode node = comboBox.Items[e.Index] as MemberTreeNode;
 
+                int imageWidth = _icons.ImageSize.Width;
+                int imageHeight = _icons.ImageSize.Height;
+
                 // Clear the old background
-                e.Graphics.FillRectangle(new SolidBrush(comboBox.BackColor), e.Bounds.Left + 16, e.Bounds.Top, e.Bounds.Width - 16, e.Bounds.Height);
+                if ((e.State & DrawItemState.ComboBoxEdit) == 0)
+                    e.Graphics.FillRectangle(new SolidBrush(comboBox.BackColor), e.Bounds.Left + imageWidth, e.Bounds.Top, e.Bounds.Width - imageWidth, e.Bounds.Height);
 
                 // Draw the item image
-                e.Graphics.DrawImage(_icons.Images[node.ImageIndex], new Point(e.Bounds.Left, e.Bounds.Top));
+                e.Graphics.DrawImage(_icons.Images[node.ImageIndex], new Rectangle(e.Bounds.Left, e.Bounds.Top, imageWidth, imageHeight));
 
                 // Is this item being hovered over?
                 if ((e.State & DrawItemState.Focus) != 0 ||
                     (e.State & DrawItemState.Selected) != 0)
                 {
                     // Draw a selection box and label in the selection text color
-                    e.Graphics.FillRectangle(new SolidBrush(SystemColors.Highlight), e.Bounds.Left + 16, e.Bounds.Top, e.Bounds.Width - 17, e.Bounds.Height - 1);
-                    e.Graphics.DrawRectangle(new Pen(new SolidBrush(Color.Black)), e.Bounds.Left + 16, e.Bounds.Top, e.Bounds.Width - 17, e.Bounds.Height - 1);
+                    e.Graphics.FillRectangle(new SolidBrush(SystemColors.Highlight), e.Bounds.Left + imageWidth, e.Bounds.Top, e.Bounds.Width - imageWidth - 1, e.Bounds.Height - 1);
+                    e.Graphics.DrawRectangle(new Pen(new SolidBrush(Color.Black)), e.Bounds.Left + imageWidth, e.Bounds.Top, e.Bounds.Width - imageWidth - 1, e.Bounds.Height - 1);
 
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.HighlightText), new Point(e.Bounds.Left + 17, e.Bounds.Top));
+                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.HighlightText), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
                 }
                 // Is this item disabled?
                 else if ((e.State & DrawItemState.Disabled) != 0)
                 {
                     // Draw the label in the disabled text color
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.GrayText), new Point(e.Bounds.Left + 17, e.Bounds.Top));
+                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.GrayText), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
                 }
                 // Is this item inherited?
                 else if (node is InheritedMemberTreeNode)
                 {
                     // Draw the label in the disabled text color
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(Color.Gray), new Point(e.Bounds.Left + 17, e.Bounds.Top));
+                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(Color.Gray), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
                 }
                 else
                 {
                     // Draw the label in the foreground color
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(comboBox.ForeColor), new Point(e.Bounds.Left + 17, e.Bounds.Top));
+                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(comboBox.ForeColor), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
                 }
             }
         }
@@ -465,19 +483,19 @@ namespace NavigationBar.Controls
 
         private void ShowImportDropDown()
         {
-            if (!this.Items.Contains(importComboBox))
+            if (!Items.Contains(importComboBox))
             {
                 importComboBox.Visible = true;
-                this.Items.Insert(0, importComboBox);
+                Items.Insert(0, importComboBox);
             }
         }
 
         private void HideImportDropDown()
         {
-            if (this.Items.Contains(importComboBox))
+            if (Items.Contains(importComboBox))
             {
                 importComboBox.Visible = false;
-                this.Items.Remove(importComboBox);
+                Items.Remove(importComboBox);
             }
         }
 
@@ -540,8 +558,8 @@ namespace NavigationBar.Controls
                     {
                         // While extended class is not null, Object, Void, or haXe Dynamic
                         var extendClassModel = classModel.Extends;
-                        while (extendClassModel != null && 
-                               extendClassModel.Name != "Object" && 
+                        while (extendClassModel != null &&
+                               extendClassModel.Name != "Object" &&
                                extendClassModel != ClassModel.VoidClass &&
                                (!extendClassModel.InFile.haXe || extendClassModel.Type != "Dynamic"))
                          {
@@ -573,8 +591,8 @@ namespace NavigationBar.Controls
 
         private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited, bool isImported)
         {
-            int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? ASCompletion.PluginUI.ICON_INTRINSIC_TYPE :
-                           ((classModel.Flags & FlagType.Interface) > 0) ? ASCompletion.PluginUI.ICON_INTERFACE : ASCompletion.PluginUI.ICON_TYPE;
+            int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? PluginUI.ICON_INTRINSIC_TYPE :
+                           ((classModel.Flags & FlagType.Interface) > 0) ? PluginUI.ICON_INTERFACE : PluginUI.ICON_TYPE;
             return isInherited ? new InheritedClassTreeNode(classModel, imageNum, _settings.ShowQualifiedClassName) :
                    isImported ? new ImportTreeNode(classModel, imageNum, _settings.ShowQualifiedClassName) :
                                 new ClassTreeNode(classModel, imageNum, _settings.ShowQualifiedClassName) as MemberTreeNode;
@@ -664,7 +682,7 @@ namespace NavigationBar.Controls
         private MemberTreeNode GetMemberTreeNode(MemberModel memberModel, ClassModel classModel)
         {
             MemberTreeNode node = null;
-            int imageIndex = ASCompletion.PluginUI.GetIcon(memberModel.Flags, memberModel.Access);
+            int imageIndex = PluginUI.GetIcon(memberModel.Flags, memberModel.Access);
 
             if (imageIndex != 0)
             {
@@ -879,12 +897,12 @@ namespace NavigationBar.Controls
             _updating = true;
 
             // If we are not visible then we should see if we belong in this document
-            if (!this.Visible)
+            if (!Visible)
             {
                 // Only display the navigation bar if we are a code file
                 if (ASContext.Context.CurrentModel != FileModel.Ignore)
                 {
-                    this.Visible = true;
+                    Visible = true;
                 }
                 else
                 {
@@ -992,7 +1010,7 @@ namespace NavigationBar.Controls
             }
             else
             {
-                _label = this.Text;
+                _label = Text;
             }
             _model = memberModel;
             Tag = memberModel.Name + "@" + memberModel.LineFrom;
@@ -1022,7 +1040,7 @@ namespace NavigationBar.Controls
         public InheritedMemberTreeNode(ClassModel classModel, MemberModel memberModel, int imageIndex, bool labelPropertiesLikeFunctions)
             : base(memberModel, imageIndex, labelPropertiesLikeFunctions)
         {
-            _label = this.Text + " - " + classModel.Name;
+            _label = Text + " - " + classModel.Name;
             _classModel = classModel;
         }
 

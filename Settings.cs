@@ -1,10 +1,7 @@
-using System;
-using System.ComponentModel;
-using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Text;
 using ASCompletion.Settings;
 using NavigationBar.Localization;
+using System;
+using System.ComponentModel;
 
 namespace NavigationBar
 {
