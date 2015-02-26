@@ -159,6 +159,9 @@
   <data name="NavigationBar.Description.DropDownMultiKeyTimer" xml:space="preserve">
     <value>The amount of time (in ms) which must elapse between keyboard character input before resetting the search key</value>
   </data>
+  <data name="NavigationBar.Label.DropDownFullWordSearchEnabled" xml:space="preserve">
+    <value>If enabled, searching in the dropdown will parse the full member's name. If disabled, it will parse only the beginning of the member's name.</value>
+  </data>
   <data name="NavigationBar.Label.IgnoreUnderscore" xml:space="preserve">
     <value>Ignore Underscore</value>
   </data>
@@ -203,5 +206,8 @@
   </data>
   <data name="NavigationBar.Label.DropDownMultiKeyTimer" xml:space="preserve">
     <value>DropDown Multiple Key Search Timer (ms)</value>
+  </data>
+  <data name="NavigationBar.Label.DropDownFullWordSearchEnabled" xml:space="preserve">
+    <value>DropDown Full Word Search Enabled</value>
   </data>
 </root>

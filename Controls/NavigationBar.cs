@@ -846,6 +846,23 @@ namespace NavigationBar.Controls
                     return;
                 }
             }
+
+            // If searching the beginning of the nodes' names has failed, then run through
+            // the full list from top to bottom and search through nodes' full name.
+            if (_settings.DropDownFullWordSearchEnabled)
+            {
+                int itemCount = comboBox.Items.Count;
+                for (searchIndex = 0; searchIndex < itemCount; ++searchIndex)
+                {
+                    node = (MemberTreeNode)comboBox.Items[searchIndex];
+
+                    if (NodeContains(node, searchKey))
+                    {
+                        comboBox.SelectedIndex = searchIndex;
+                        return;
+                    }
+                }
+            }
         }
 
         private void ReverseSearch(ComboBox comboBox, string searchKey)
@@ -877,19 +894,43 @@ namespace NavigationBar.Controls
                     return;
                 }
             }
+
+            // If searching the beginning of the nodes' names has failed, then run through
+            // the full list from bottom to top and search through nodes' full name.
+            if (_settings.DropDownFullWordSearchEnabled)
+            {
+                for (searchIndex = comboBox.Items.Count; searchIndex >= 0; --searchIndex)
+                {
+                    node = (MemberTreeNode)comboBox.Items[searchIndex];
+
+                    if (NodeContains(node, searchKey))
+                    {
+                        comboBox.SelectedIndex = searchIndex;
+                        return;
+                    }
+                }
+            }
+        }
+
+        private string GetNodeSearchString(MemberTreeNode node)
+        {
+            // If node navigates to a class then ignore the package name
+            if (node is ClassTreeNode || node is ImportTreeNode || node is InheritedClassTreeNode)
+            {
+                return _settings.IgnoreUnderscore ? node.Model.Name.TrimStart('_') : node.Model.Name;
+            }
+            return _settings.IgnoreUnderscore ? node.Label.TrimStart('_') : node.Label;
         }
 
         private bool NodeStartsWith(MemberTreeNode node, string searchKey)
         {
-            string searchString;
+            return GetNodeSearchString(node).StartsWith(searchKey, StringComparison.CurrentCultureIgnoreCase);
+        }
 
-            // If node navigates to a class then ignore the package name
-            if (node is ClassTreeNode || node is ImportTreeNode || node is InheritedClassTreeNode)
-                searchString = _settings.IgnoreUnderscore ? node.Model.Name.TrimStart('_') : node.Model.Name;
-            else
-                searchString = _settings.IgnoreUnderscore ? node.Label.TrimStart('_') : node.Label;
-
-            return searchString.StartsWith(searchKey, StringComparison.CurrentCultureIgnoreCase);
+        private bool NodeContains(MemberTreeNode node, string searchKey)
+        {
+            // Using IndexOf instead of Contains so that the IgnoreCase can be included
+            return GetNodeSearchString(node).IndexOf(searchKey, 0, StringComparison.CurrentCultureIgnoreCase) != -1;
         }
 
         #endregion

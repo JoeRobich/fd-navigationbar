@@ -23,6 +23,7 @@ namespace NavigationBar
         private const OutlineSorting DEFAULT_MEMBER_SORT_METHOD = OutlineSorting.Sorted;
         private const bool DEFAULT_DROPDOWN_MULTIKEY_SEARCH_ENABLED = true;
         private const int DEFAULT_DROPDOWN_MULTIKEY_SEARCH_TIMER = 1000;
+        private const bool DEFAULT_DROPDOWN_FULLWORD_SEARCH_ENABLED = true;
 
         private bool _showNavigationToolbar = DEFAULT_SHOW_NAVIGATION_TOOLBAR;
         private bool _showImportedClasses = DEFAULT_SHOW_IMPORTED_CLASSES;
@@ -34,6 +35,7 @@ namespace NavigationBar
         private OutlineSorting _memberSortMethod = DEFAULT_MEMBER_SORT_METHOD;
         private bool _dropDownMultiKeySearchEnabled = false;
         private int _dropDownMultiKeySearchTimer = 0;
+        private bool _dropDownFullWordSearchEnabled = false;
 
         [LocalizedCategory("NavigationBar.Category.Visibility")]
         [LocalizedDisplayName("NavigationBar.Label.ShowNavigationToolbar")]
@@ -200,6 +202,23 @@ namespace NavigationBar
                 if (_dropDownMultiKeySearchTimer != value)
                 {
                     _dropDownMultiKeySearchTimer = value;
+                    FireChanged();
+                }
+            }
+        }
+
+        [LocalizedCategory("NavigationBar.Category.Search")]
+        [LocalizedDisplayName("NavigationBar.Label.DropDownFullWordSearchEnabled")]
+        [LocalizedDescription("NavigationBar.Description.DropDownFullWordSearchEnabled")]
+        [DefaultValue(DEFAULT_DROPDOWN_FULLWORD_SEARCH_ENABLED)]
+        public bool DropDownFullWordSearchEnabled
+        {
+            get { return _dropDownFullWordSearchEnabled; }
+            set
+            {
+                if (_dropDownFullWordSearchEnabled != value)
+                {
+                    _dropDownFullWordSearchEnabled = value;
                     FireChanged();
                 }
             }
