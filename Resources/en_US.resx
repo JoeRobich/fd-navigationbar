@@ -127,7 +127,7 @@
     <value>Visibility</value>
   </data>
   <data name="NavigationBar.Category.Search" xml:space="preserve">
-    <value>BHVR</value>
+    <value>Search</value>
   </data>
   <data name="NavigationBar.Description.IgnoreUnderscore" xml:space="preserve">
     <value>Whether to ignore the '_' character when using keys to search the dropdown.</value>
@@ -157,7 +157,7 @@
     <value>If enabled, searching in a dropdown with the keyboard will support search keys of more than 1 character</value>
   </data>
   <data name="NavigationBar.Description.DropDownMultiKeyTimer" xml:space="preserve">
-    <value>The amount of time which must elapse between keyboard character input before resetting the search key</value>
+    <value>The amount of time (in ms) which must elapse between keyboard character input before resetting the search key</value>
   </data>
   <data name="NavigationBar.Label.IgnoreUnderscore" xml:space="preserve">
     <value>Ignore Underscore</value>
@@ -202,6 +202,6 @@
     <value>DropDown Multiple Key Search Enabled</value>
   </data>
   <data name="NavigationBar.Label.DropDownMultiKeyTimer" xml:space="preserve">
-    <value>DropDown Multiple Key Search Timer</value>
+    <value>DropDown Multiple Key Search Timer (ms)</value>
   </data>
 </root>
