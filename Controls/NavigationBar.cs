@@ -47,6 +47,9 @@ namespace NavigationBar.Controls
         private ToolStripMenuItem _sortByKindItem;
         private ToolStripMenuItem _sortSmartItem;
 
+        private string _dropDownSearchKey;
+        private Timer _dropDownSearchTimer;
+
         #region Initializing and Disposing
 
         public NavigationBar(ITabbedDocument document, Settings settings)
@@ -80,6 +83,13 @@ namespace NavigationBar.Controls
             updateTimer = new Timer();
 
             SuspendLayout();
+
+            // 
+            // dropDown search
+            // 
+            _dropDownSearchTimer = new Timer();
+            _dropDownSearchTimer.Tick += new EventHandler(dropDownSearchTimer_Tick);
+            _dropDownSearchKey = "";
 
             // 
             // importComboBox
@@ -393,6 +403,9 @@ namespace NavigationBar.Controls
 
         private void comboBox_DropDownClosed(object sender, EventArgs e)
         {
+            _dropDownSearchTimer.Stop();
+            _dropDownSearchKey = "";
+
             _document.SciControl.Focus();
             ResetDropDowns();
         }
@@ -402,14 +415,25 @@ namespace NavigationBar.Controls
             ComboBox comboBox = ((ToolStripSpringComboBox)sender).ComboBox;
             string searchKey = e.KeyChar.ToString();
 
-            // If shift is pressed then reverse search
-            if ((ModifierKeys & Keys.Shift) == 0)
+            if (_settings.DropDownMultiKeyEnabled)
             {
-                ForwardSearch(comboBox, searchKey);
+                _dropDownSearchTimer.Stop();
+                _dropDownSearchKey += searchKey;
+                _dropDownSearchTimer.Start();
             }
             else
             {
-                ReverseSearch(comboBox, searchKey);
+                _dropDownSearchKey = searchKey;
+            }
+
+            // If shift is pressed then reverse search
+            if ((ModifierKeys & Keys.Shift) == 0)
+            {
+                ForwardSearch(comboBox, _dropDownSearchKey);
+            }
+            else
+            {
+                ReverseSearch(comboBox, _dropDownSearchKey);
             }
         }
 
@@ -783,6 +807,12 @@ namespace NavigationBar.Controls
             _updating = false;
         }
 
+        void dropDownSearchTimer_Tick(object sender, EventArgs e)
+        {
+            _dropDownSearchKey = "";
+            _dropDownSearchTimer.Stop();
+        }
+
         #endregion
 
         #region Node Search Methods
@@ -878,6 +908,11 @@ namespace NavigationBar.Controls
             // Hide the imported dropdown if it is visible
             else if (!_settings.ShowImportedClasses)
                 HideImportDropDown();
+
+            if (_dropDownSearchTimer != null && _settings.DropDownMultiKeyTimer > 0)
+            {
+                _dropDownSearchTimer.Interval = _settings.DropDownMultiKeyTimer;
+            }
 
             // Forces a rebuild of the dropdowns
             _textChanged = true;

@@ -126,6 +126,9 @@
   <data name="NavigationBar.Category.Visibility" xml:space="preserve">
     <value>Visibility</value>
   </data>
+  <data name="NavigationBar.Category.Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
   <data name="NavigationBar.Description.IgnoreUnderscore" xml:space="preserve">
     <value>Whether to ignore the '_' character when using keys to search the dropdown.</value>
   </data>
@@ -149,6 +152,12 @@
   </data>
   <data name="NavigationBar.Description.SortingMethod" xml:space="preserve">
     <value>The method used to sort the dropdowns.</value>
+  </data>
+  <data name="NavigationBar.Description.DropDownMultiKeyEnabled" xml:space="preserve">
+    <value>If enabled, searching in a dropdown with the keyboard will support search keys of more than 1 character</value>
+  </data>
+  <data name="NavigationBar.Description.DropDownMultiKeyTimer" xml:space="preserve">
+    <value>The amount of time (in ms) which must elapse between keyboard character input before resetting the search key</value>
   </data>
   <data name="NavigationBar.Label.IgnoreUnderscore" xml:space="preserve">
     <value>Ignore Underscore</value>
@@ -188,5 +197,11 @@
   </data>
   <data name="NavigationBar.Label.SortingMethod" xml:space="preserve">
     <value>Sorting Method</value>
+  </data>
+  <data name="NavigationBar.Label.DropDownMultiKeyEnabled" xml:space="preserve">
+    <value>DropDown Multiple Key Search Enabled</value>
+  </data>
+  <data name="NavigationBar.Label.DropDownMultiKeyTimer" xml:space="preserve">
+    <value>DropDown Multiple Key Search Timer (ms)</value>
   </data>
 </root>
