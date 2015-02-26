@@ -21,6 +21,8 @@ namespace NavigationBar
         private const bool DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS = false;
         private const bool DEFAULT_IGNORE_UNDERSCORE = false;
         private const OutlineSorting DEFAULT_MEMBER_SORT_METHOD = OutlineSorting.Sorted;
+        private const bool DEFAULT_DROPDOWN_MULTIKEY_SEARCH_ENABLED = true;
+        private const int DEFAULT_DROPDOWN_MULTIKEY_SEARCH_TIMER = 1000;
 
         private bool _showNavigationToolbar = DEFAULT_SHOW_NAVIGATION_TOOLBAR;
         private bool _showImportedClasses = DEFAULT_SHOW_IMPORTED_CLASSES;
@@ -30,6 +32,8 @@ namespace NavigationBar
         private bool _labelPropertiesLikeFunctions = DEFAULT_LABEL_PROPERTIES_LIKE_FUNCTIONS;
         private bool _ignoreUnderscore = DEFAULT_IGNORE_UNDERSCORE;
         private OutlineSorting _memberSortMethod = DEFAULT_MEMBER_SORT_METHOD;
+        private bool _dropDownMultiKeySearchEnabled = false;
+        private int _dropDownMultiKeySearchTimer = 0;
 
         [LocalizedCategory("NavigationBar.Category.Visibility")]
         [LocalizedDisplayName("NavigationBar.Label.ShowNavigationToolbar")]
@@ -162,6 +166,40 @@ namespace NavigationBar
                 if (_memberSortMethod != value)
                 {
                     _memberSortMethod = value;
+                    FireChanged();
+                }
+            }
+        }
+
+        [LocalizedCategory("NavigationBar.Category.Search")]
+        [LocalizedDisplayName("NavigationBar.Label.DropDownMultiKeyEnabled")]
+        [LocalizedDescription("NavigationBar.Description.DropDownMultiKeyEnabled")]
+        [DefaultValue(DEFAULT_DROPDOWN_MULTIKEY_SEARCH_ENABLED)]
+        public bool DropDownMultiKeyEnabled
+        {
+            get { return _dropDownMultiKeySearchEnabled; }
+            set
+            {
+                if (_dropDownMultiKeySearchEnabled != value)
+                {
+                    _dropDownMultiKeySearchEnabled = value;
+                    FireChanged();
+                }
+            }
+        }
+
+        [LocalizedCategory("NavigationBar.Category.Search")]
+        [LocalizedDisplayName("NavigationBar.Label.DropDownMultiKeyTimer")]
+        [LocalizedDescription("NavigationBar.Description.DropDownMultiKeyTimer")]
+        [DefaultValue(DEFAULT_DROPDOWN_MULTIKEY_SEARCH_TIMER)]
+        public int DropDownMultiKeyTimer
+        {
+            get { return _dropDownMultiKeySearchTimer; }
+            set
+            {
+                if (_dropDownMultiKeySearchTimer != value)
+                {
+                    _dropDownMultiKeySearchTimer = value;
                     FireChanged();
                 }
             }
