@@ -5,7 +5,7 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
 ## Download
-[Version 2.4](http://goo.gl/etaZn)
+[Releases](https://github.com/JoeRobich/fd-navigationbar/releases/) 
 
 ## History
 **v2.4** - New options when for navigating dropdowns with a keyboard (Thanks to PapaDSquat!). Updated to work with FD5.  
