@@ -1,13 +1,14 @@
-# NavigationBar for FlashDevelop 4
+# NavigationBar for FlashDevelop 5
 
 Adds a bar that provides dropdowns for classes, members, and optionally imports. Configure shortcuts for the dropdowns to quickly navigate through your code. Optionally, inherited classes and members are also available and rendered in a gray color (may lag a bit on large projects/classes). Sort the dropdowns with the same sorts available in the Outline panel.
 
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
 ## Download
-[Version 2.3](http://goo.gl/etaZn)
+[Version 2.4](http://goo.gl/etaZn)
 
 ## History
+**v2.4** - New options when for navigating dropdowns with a keyboard (Thanks to PapaDSquat!). Updated to work with FD5.  
 **v2.3** - Fixes for High DPI. Added support for FD Themes. Fixed bug with non-en_US locales.  
 **v2.2.3** - Fixed navigate forward/backward shortcuts.  
 **v2.2.2** - Fixed out of memory bug when finding all references.  
@@ -36,3 +37,4 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 - The FlashDevelop team for making an awesome product and being very helpful in the forums (http://flashdevelop.org/)
 - Canab the maker of the QuickNavigationPlugin of which I borrowed a little more than inspiration (http://www.flashdevelop.org/community/viewtopic.php?f=4&t=5961)
 - Everyone who has submitted a bug report (Philippe, IAP, bjarneh)
+- Everyone who has submitted new features (PapaDSquat)
