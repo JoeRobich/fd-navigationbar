@@ -1,23 +1,19 @@
-using System;
-using System.IO;
-using System.Drawing;
-using System.Windows.Forms;
-using System.ComponentModel;
-using PluginCore.Localization;
-using PluginCore.Utilities;
-using PluginCore.Managers;
-using PluginCore.Helpers;
-using PluginCore;
-using ASCompletion.Context;
-using ASCompletion.Model;
-using NavigationBar.Controls;
 using NavigationBar.Helpers;
 using NavigationBar.Managers;
+using PluginCore;
+using PluginCore.Helpers;
+using PluginCore.Managers;
+using PluginCore.Utilities;
 using ProjectManager;
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace NavigationBar
 {
-	public class PluginMain : IPlugin
+    public class PluginMain : IPlugin
 	{
         private const int API = 1;
         private const string NAME = "NavigationBar";
@@ -28,8 +24,8 @@ namespace NavigationBar
 
         private string _settingFilename = "";
         private Settings _settings;
-        private ToolStripButton _navigateForwardButton = null;
-        private ToolStripButton _navigateBackwardButton = null;
+        private ToolStripSplitButton _navigateBackwardButton = null;
+        private ToolStripSplitButton _navigateForwardButton = null;
 
 
 	    #region Required Properties
@@ -44,7 +40,7 @@ namespace NavigationBar
 
         /// <summary>
         /// Name of the plugin
-        /// </summary> 
+        /// </summary>
         public String Name
 		{
 			get { return NAME; }
@@ -60,7 +56,7 @@ namespace NavigationBar
 
         /// <summary>
         /// Author of the plugin
-        /// </summary> 
+        /// </summary>
         public String Author
 		{
 			get { return AUTHOR; }
@@ -68,7 +64,7 @@ namespace NavigationBar
 
         /// <summary>
         /// Description of the plugin
-        /// </summary> 
+        /// </summary>
         public String Description
 		{
 			get { return DESCRIPTION; }
@@ -76,7 +72,7 @@ namespace NavigationBar
 
         /// <summary>
         /// Web address for help
-        /// </summary> 
+        /// </summary>
         public String Help
 		{
 			get { return HELP; }
@@ -90,11 +86,11 @@ namespace NavigationBar
         {
             get { return this._settings; }
         }
-		
+
 		#endregion
-		
+
 		#region Required Methods
-		
+
 		/// <summary>
 		/// Initializes the plugin
 		/// </summary>
@@ -106,7 +102,7 @@ namespace NavigationBar
             this.CreateMenuItems();
             this.CreateToolbarItems();
         }
-		
+
 		/// <summary>
 		/// Disposes the plugin
 		/// </summary>
@@ -114,7 +110,7 @@ namespace NavigationBar
 		{
             this.SaveSettings();
 		}
-		
+
 		/// <summary>
 		/// Handles the incoming events
 		/// </summary>
@@ -193,7 +189,7 @@ namespace NavigationBar
         {
             NavigationManager.Instance.NavigateBackward();
         }
-		
+
 		#endregion
 
         #region Plugin Methods
@@ -262,7 +258,7 @@ namespace NavigationBar
 
         /// <summary>
         /// Adds the required event handlers
-        /// </summary> 
+        /// </summary>
         public void AddEventHandlers()
         {
             // Set events you want to listen (combine as flags)
@@ -307,20 +303,59 @@ namespace NavigationBar
 
         public void CreateToolbarItems()
         {
-            _navigateBackwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), PluginBase.MainForm.FindImage("315|1|-3|3"));
+            _navigateBackwardButton = new ToolStripSplitButton(ResourceHelper.GetString("NavigationBar.Label.NavigateBackward"), PluginBase.MainForm.FindImage("315|1|-3|3"));
             _navigateBackwardButton.Name = "NavigateBackward";
             _navigateBackwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            _navigateBackwardButton.Click += new EventHandler(NavigateBackward);
+            _navigateBackwardButton.ButtonClick += new EventHandler(NavigateBackward);
+            _navigateBackwardButton.DropDownOpening += NavigateBackwardDropDownOpening;
+            _navigateBackwardButton.DropDown.Renderer = new DockPanelStripRenderer();
             PluginBase.MainForm.ToolStrip.Items.Add(_navigateBackwardButton);
 
-            _navigateForwardButton = new ToolStripButton(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), PluginBase.MainForm.FindImage("315|9|3|3"));
+            _navigateForwardButton = new ToolStripSplitButton(ResourceHelper.GetString("NavigationBar.Label.NavigateForward"), PluginBase.MainForm.FindImage("315|9|3|3"));
             _navigateForwardButton.Name = "NavigateForward";
             _navigateForwardButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            _navigateForwardButton.Click += new EventHandler(NavigateForward);
+            _navigateForwardButton.ButtonClick += new EventHandler(NavigateForward);
+            _navigateForwardButton.DropDownOpening += NavigateForwardDropDownOpening;
+            _navigateForwardButton.DropDown.Renderer = new DockPanelStripRenderer();
             PluginBase.MainForm.ToolStrip.Items.Add(_navigateForwardButton);
 
             UpdateNavigationButtons();
         }
+
+        private void NavigateBackwardDropDownOpening(object sender, EventArgs e)
+        {
+            _navigateBackwardButton.DropDownItems.Clear();
+            var historyItems = NavigationManager.Instance.BackwardHistory.Select(nl =>
+            {
+                return new ToolStripMenuItem(nl.ToString(), null, NavigateBackwardDropDownItemClick) { Tag = nl };
+            });
+            _navigateBackwardButton.DropDownItems.AddRange(historyItems.ToArray());
+        }
+
+        private void NavigateBackwardDropDownItemClick(object sender, EventArgs e)
+        {
+            var item = (ToolStripMenuItem)sender;
+            var navigationLocation = (NavigationLocation)item.Tag;
+            NavigationManager.Instance.NavigateBackwardTo(navigationLocation);
+        }
+
+        private void NavigateForwardDropDownOpening(object sender, EventArgs e)
+        {
+            _navigateForwardButton.DropDownItems.Clear();
+            var historyItems = NavigationManager.Instance.ForwardHistory.Select(nl =>
+            {
+                return new ToolStripMenuItem(nl.ToString(), null, NavigateForwardDropDownItemClick) { Tag = nl };
+            });
+            _navigateForwardButton.DropDownItems.AddRange(historyItems.ToArray());
+        }
+
+        private void NavigateForwardDropDownItemClick(object sender, EventArgs e)
+        {
+            var item = (ToolStripMenuItem)sender;
+            var navigationLocation = (NavigationLocation)item.Tag;
+            NavigationManager.Instance.NavigateForwardTo(navigationLocation);
+        }
+
 
         /// <summary>
         /// Loads the plugin settings

@@ -5,6 +5,8 @@ using System.Windows.Forms;
 using ASCompletion.Context;
 using ASCompletion;
 using ASCompletion.Model;
+using System.Collections;
+using System.IO;
 
 namespace NavigationBar.Managers
 {
@@ -77,6 +79,36 @@ namespace NavigationBar.Managers
             _forwardStack.Push(_currentLocation);
             _currentLocation = _backwardStack.Pop();
             NavigateTo(_currentLocation);
+        }
+
+        internal void NavigateBackwardTo(NavigationLocation location)
+        {
+            while (_currentLocation != location)
+            {
+                _forwardStack.Push(_currentLocation);
+                _currentLocation = _backwardStack.Pop();
+            }
+            NavigateTo(_currentLocation);
+        }
+
+        internal IEnumerable<NavigationLocation> BackwardHistory
+        {
+            get { return _backwardStack; }
+        }
+
+        internal void NavigateForwardTo(NavigationLocation location)
+        {
+            while (_currentLocation != location)
+            {
+                _backwardStack.Push(_currentLocation);
+                _currentLocation = _forwardStack.Pop();
+            }
+            NavigateTo(_currentLocation);
+        }
+
+        internal IEnumerable<NavigationLocation> ForwardHistory
+        {
+            get { return _forwardStack; }
         }
 
         public void Clear()
@@ -204,9 +236,14 @@ namespace NavigationBar.Managers
         public string MemberName { get; set; }
         public FlagType MemberFlags { get; set; }
         public int LineFrom { get; set; }
+
+        public override string ToString()
+        {
+            return string.Format("{0} {1}.{2} Line: {3}", Path.GetFileName(FilePath), ClassName, MemberName, LineFrom);
+        }
     }
 
-    class FixedSizeStack<T>
+    class FixedSizeStack<T> : IEnumerable<T>
     {
         private List<T> _list = new List<T>();
         private int _maxSize = 10;
@@ -240,9 +277,24 @@ namespace NavigationBar.Managers
                 _list.RemoveAt(_maxSize - 1);
         }
 
+        public bool Contains(T item)
+        {
+            return _list.Contains(item);
+        }
+
         public void Clear()
         {
             _list.Clear();
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _list.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _list.GetEnumerator();
         }
     }
 

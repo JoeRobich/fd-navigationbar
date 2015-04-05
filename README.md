@@ -8,7 +8,8 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 [Releases](https://github.com/JoeRobich/fd-navigationbar/releases/) 
 
 ## History
-**v2.4** - New options when for navigating dropdowns with a keyboard (Thanks to PapaDSquat!). Updated to work with FD5.  
+**v2.5** - Improved dropdown layout. Navigate Forward/Backward buttons now have a dropdown of the history.  
+**v2.4** - New options when navigating dropdowns with a keyboard (Thanks to PapaDSquat!). Updated to work with FD5.  
 **v2.3** - Fixes for High DPI. Added support for FD Themes. Fixed bug with non-en_US locales.  
 **v2.2.3** - Fixed navigate forward/backward shortcuts.  
 **v2.2.2** - Fixed out of memory bug when finding all references.  

@@ -4,20 +4,22 @@ using ASCompletion.Model;
 using ASCompletion.Settings;
 using NavigationBar.Helpers;
 using PluginCore;
+using PluginCore.Controls;
 using PluginCore.Helpers;
 using PluginCore.Localization;
 using ScintillaNet;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Reflection;
 using System.Windows.Forms;
 
 namespace NavigationBar.Controls
 {
-    public partial class NavigationBar : ToolStrip, IDisposable
+    public partial class NavigationBar : ToolStripEx, IDisposable
     {
-        private static ImageList _icons = null;
+        private static Bitmap[] _icons = null;
         private bool _updating = false;
         private int _lastPosition = -1;
         private bool _textChanged = false;
@@ -91,54 +93,55 @@ namespace NavigationBar.Controls
             _dropDownSearchTimer.Tick += new EventHandler(dropDownSearchTimer_Tick);
             _dropDownSearchKey = "";
 
-            // 
+            //
             // importComboBox
-            // 
+            //
             importComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
             importComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            importComboBox.Margin = new Padding(0, 0, 0, 0);
             importComboBox.MaxDropDownItems = 25;
             importComboBox.Name = "importComboBox";
             importComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
             importComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
             importComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
             importComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
-            // 
+            //
             // classComboBox
-            // 
+            //
             classComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
             classComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            classComboBox.Margin = new Padding(0, 0, 0, 0);
             classComboBox.MaxDropDownItems = 25;
             classComboBox.Name = "classComboBox";
             classComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
             classComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
             classComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
             classComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
-            // 
+            //
             // memberComboBox
-            // 
+            //
             memberComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
             memberComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            memberComboBox.Margin = new Padding(0, 0, 0, 0);
             memberComboBox.MaxDropDownItems = 25;
             memberComboBox.Name = "memberComboBox";
-            memberComboBox.Padding = new Padding(0, 0, 0, 1);
             memberComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
             memberComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
             memberComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
             memberComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
-            // 
+            //
             // updateTimer
-            // 
+            //
             updateTimer.Tick += new EventHandler(updateTimer_Tick);
-            // 
+            //
             // NavigationBar
-            // 
+            //
             CanOverflow = false;
             Dock = DockStyle.Top;
             GripStyle = ToolStripGripStyle.Hidden;
             Items.AddRange(new ToolStripItem[] {
                 importComboBox, classComboBox, memberComboBox });
             Name = "NavigationBar";
-            Padding = new Padding(1, 1, 2, 2);
             Stretch = true;
             Visible = false;
             ResumeLayout(false);
@@ -176,46 +179,43 @@ namespace NavigationBar.Controls
         private void InitializeIcons()
         {
             //Pull the member icons from the resources;
-            _icons = new ImageList();
-            _icons.TransparentColor = Color.Transparent;
-            _icons.ImageSize = ScaleHelper.Scale(new Size(16, 16));
-            _icons.Images.AddRange(new Bitmap[] {
-                new Bitmap(PluginUI.GetStream("FilePlain.png")),
-                new Bitmap(PluginUI.GetStream("FolderClosed.png")),
-                new Bitmap(PluginUI.GetStream("FolderOpen.png")),
-                new Bitmap(PluginUI.GetStream("CheckAS.png")),
-                new Bitmap(PluginUI.GetStream("QuickBuild.png")),
-                new Bitmap(PluginUI.GetStream("Package.png")),
-                new Bitmap(PluginUI.GetStream("Interface.png")),
-                new Bitmap(PluginUI.GetStream("Intrinsic.png")),
-                new Bitmap(PluginUI.GetStream("Class.png")),
-                new Bitmap(PluginUI.GetStream("Variable.png")),
-                new Bitmap(PluginUI.GetStream("VariableProtected.png")),
-                new Bitmap(PluginUI.GetStream("VariablePrivate.png")),
-                new Bitmap(PluginUI.GetStream("VariableStatic.png")),
-                new Bitmap(PluginUI.GetStream("VariableStaticProtected.png")),
-                new Bitmap(PluginUI.GetStream("VariableStaticPrivate.png")),
-                new Bitmap(PluginUI.GetStream("Const.png")),
-                new Bitmap(PluginUI.GetStream("ConstProtected.png")),
-                new Bitmap(PluginUI.GetStream("ConstPrivate.png")),
-                new Bitmap(PluginUI.GetStream("Const.png")),
-                new Bitmap(PluginUI.GetStream("ConstProtected.png")),
-                new Bitmap(PluginUI.GetStream("ConstPrivate.png")),
-                new Bitmap(PluginUI.GetStream("Method.png")),
-                new Bitmap(PluginUI.GetStream("MethodProtected.png")),
-                new Bitmap(PluginUI.GetStream("MethodPrivate.png")),
-                new Bitmap(PluginUI.GetStream("MethodStatic.png")),
-                new Bitmap(PluginUI.GetStream("MethodStaticProtected.png")),
-                new Bitmap(PluginUI.GetStream("MethodStaticPrivate.png")),
-                new Bitmap(PluginUI.GetStream("Property.png")),
-                new Bitmap(PluginUI.GetStream("PropertyProtected.png")),
-                new Bitmap(PluginUI.GetStream("PropertyPrivate.png")),
-                new Bitmap(PluginUI.GetStream("PropertyStatic.png")),
-                new Bitmap(PluginUI.GetStream("PropertyStaticProtected.png")),
-                new Bitmap(PluginUI.GetStream("PropertyStaticPrivate.png")),
-                new Bitmap(PluginUI.GetStream("Template.png")),
-                new Bitmap(PluginUI.GetStream("Declaration.png"))
-            });
+            _icons = new Bitmap[] {
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("FilePlain.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("FolderClosed.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("FolderOpen.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("CheckAS.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("QuickBuild.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Package.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Interface.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Intrinsic.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Class.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Variable.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariablePrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableStatic.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableStaticProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableStaticPrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Const.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstPrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Const.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstPrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Method.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodPrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodStatic.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodStaticProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodStaticPrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Property.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyPrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyStatic.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyStaticProtected.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyStaticPrivate.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Template.png"))),
+                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Declaration.png")))
+            };
         }
 
         public static System.IO.Stream GetStream(string name)
@@ -296,7 +296,7 @@ namespace NavigationBar.Controls
             _sortSortedItem.Checked = _settings.MemberSortMethod == OutlineSorting.Sorted ? true : false;
             _sortByKindItem.Checked = _settings.MemberSortMethod == OutlineSorting.SortedByKind ||
                                       _settings.MemberSortMethod == OutlineSorting.SortedGroup ? true : false;
-            _sortSmartItem.Checked = _settings.MemberSortMethod == OutlineSorting.SortedSmart ? true : false;            
+            _sortSmartItem.Checked = _settings.MemberSortMethod == OutlineSorting.SortedSmart ? true : false;
         }
 
         #endregion
@@ -388,7 +388,7 @@ namespace NavigationBar.Controls
 
         void _scintella_UpdateUI(ScintillaControl sender)
         {
-            // The caret may have moved 
+            // The caret may have moved
             UpdateNavigationBar();
         }
 
@@ -461,23 +461,23 @@ namespace NavigationBar.Controls
             {
                 MemberTreeNode node = comboBox.Items[e.Index] as MemberTreeNode;
 
-                int imageWidth = _icons.ImageSize.Width;
-                int imageHeight = _icons.ImageSize.Height;
+                int imageWidth = _icons[0].Width;
+                int imageHeight = _icons[0].Height;
 
                 // Clear the old background
                 if ((e.State & DrawItemState.ComboBoxEdit) == 0)
                     e.Graphics.FillRectangle(new SolidBrush(comboBox.BackColor), e.Bounds.Left + imageWidth, e.Bounds.Top, e.Bounds.Width - imageWidth, e.Bounds.Height);
 
                 // Draw the item image
-                e.Graphics.DrawImage(_icons.Images[node.ImageIndex], new Rectangle(e.Bounds.Left, e.Bounds.Top, imageWidth, imageHeight));
+                e.Graphics.DrawImage(_icons[node.ImageIndex], new Rectangle(e.Bounds.Left, e.Bounds.Top, imageWidth, imageHeight));
 
                 // Is this item being hovered over?
                 if ((e.State & DrawItemState.Focus) != 0 ||
                     (e.State & DrawItemState.Selected) != 0)
                 {
                     // Draw a selection box and label in the selection text color
-                    e.Graphics.FillRectangle(new SolidBrush(SystemColors.Highlight), e.Bounds.Left + imageWidth, e.Bounds.Top, e.Bounds.Width - imageWidth - 1, e.Bounds.Height - 1);
-                    e.Graphics.DrawRectangle(new Pen(new SolidBrush(Color.Black)), e.Bounds.Left + imageWidth, e.Bounds.Top, e.Bounds.Width - imageWidth - 1, e.Bounds.Height - 1);
+                    e.Graphics.FillRectangle(new SolidBrush(SystemColors.Highlight), e.Bounds.Left + imageWidth + 1, e.Bounds.Top + 1, e.Bounds.Width - imageWidth - 2, e.Bounds.Height - 2);
+                    e.Graphics.DrawRectangle(new Pen(new SolidBrush(Color.Black)), e.Bounds.Left + imageWidth + 1, e.Bounds.Top + 1, e.Bounds.Width - imageWidth - 2, e.Bounds.Height - 2);
 
                     e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.HighlightText), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
                 }
