@@ -4,6 +4,8 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
+Also adds an optional navigation toolbar for moving back and forth through your navigation history.
+
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigatetoolbar.png)
 
 ## Download
