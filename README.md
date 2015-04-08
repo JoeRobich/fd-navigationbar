@@ -4,6 +4,8 @@ Adds a bar that provides dropdowns for classes, members, and optionally imports.
 
 ![Screenshot](http://dl.dropbox.com/u/3917850/images/navigationbar.png)
 
+![Screenshot](http://dl.dropbox.com/u/3917850/images/navigatetoolbar.png)
+
 ## Download
 [Releases](https://github.com/JoeRobich/fd-navigationbar/releases/) 
 
