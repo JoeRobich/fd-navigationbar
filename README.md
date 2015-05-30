@@ -12,6 +12,7 @@ Also adds an optional navigation toolbar for moving back and forth through your 
 [Releases](https://github.com/JoeRobich/fd-navigationbar/releases/) 
 
 ## History
+**v2.5.1** - Handle ApplyTheme event. Updated dropdown rendering to be more themey.  
 **v2.5** - Improved dropdown layout. Navigate Forward/Backward buttons now have a dropdown of the history.  
 **v2.4** - New options when navigating dropdowns with a keyboard (Thanks to PapaDSquat!). Updated to work with FD5.  
 **v2.3** - Fixes for High DPI. Added support for FD Themes. Fixed bug with non-en_US locales.  
