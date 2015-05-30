@@ -451,39 +451,62 @@ namespace NavigationBar.Controls
                 int imageHeight = _icons[0].Height;
 
                 // Clear the old background
-                if ((e.State & DrawItemState.ComboBoxEdit) == 0)
-                    e.Graphics.FillRectangle(new SolidBrush(comboBox.BackColor), e.Bounds.Left + imageWidth, e.Bounds.Top, e.Bounds.Width - imageWidth, e.Bounds.Height);
+                DrawItemBackground(comboBox, e);
 
-                // Draw the item image
-                e.Graphics.DrawImage(_icons[node.ImageIndex], new Rectangle(e.Bounds.Left, e.Bounds.Top, imageWidth, imageHeight));
+                var focusColor = PluginBase.MainForm.GetThemeColor("ToolStripItem.BackColor");
+                focusColor = focusColor != Color.Empty ? focusColor : e.BackColor;
 
                 // Is this item being hovered over?
-                if ((e.State & DrawItemState.Focus) != 0 ||
-                    (e.State & DrawItemState.Selected) != 0)
-                {
-                    // Draw a selection box and label in the selection text color
-                    e.Graphics.FillRectangle(new SolidBrush(SystemColors.Highlight), e.Bounds.Left + imageWidth + 1, e.Bounds.Top + 1, e.Bounds.Width - imageWidth - 2, e.Bounds.Height - 2);
-                    e.Graphics.DrawRectangle(new Pen(new SolidBrush(Color.Black)), e.Bounds.Left + imageWidth + 1, e.Bounds.Top + 1, e.Bounds.Width - imageWidth - 2, e.Bounds.Height - 2);
+                DrawItemFocusRectangle(focusColor, e);
 
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.HighlightText), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
-                }
+                // Draw the item image
+                var imageRectangle = new Rectangle(e.Bounds.Left + 2, e.Bounds.Top, imageWidth, imageHeight);
+                e.Graphics.DrawImage(_icons[node.ImageIndex], imageRectangle);
+
+                var textPoint = new Point(imageRectangle.Right + 1, e.Bounds.Top);
+                Color textColor;
+
                 // Is this item disabled?
-                else if ((e.State & DrawItemState.Disabled) != 0)
-                {
-                    // Draw the label in the disabled text color
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(SystemColors.GrayText), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
-                }
+                if ((e.State & DrawItemState.Disabled) != 0)
+                    textColor = SystemColors.GrayText;
                 // Is this item inherited?
                 else if (node is InheritedMemberTreeNode)
-                {
-                    // Draw the label in the disabled text color
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(Color.Gray), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
-                }
+                    textColor = Color.Gray;
+                // Are we using default highlighting?
+                else if (focusColor == e.BackColor)
+                    textColor = e.ForeColor;
                 else
-                {
-                    // Draw the label in the foreground color
-                    e.Graphics.DrawString(node.Label, comboBox.Font, new SolidBrush(comboBox.ForeColor), new Point(e.Bounds.Left + imageWidth + 1, e.Bounds.Top));
-                }
+                    textColor = comboBox.ForeColor;
+
+                using (var textBrush = new SolidBrush(textColor))
+                    e.Graphics.DrawString(node.Label, comboBox.Font, textBrush, textPoint);
+            }
+        }
+
+        private void DrawItemBackground(ComboBox comboBox, DrawItemEventArgs e)
+        {
+            Color backColor;
+
+            if (e.Bounds.X == 0)
+                backColor = PluginBase.MainForm.GetThemeColor("ToolStripMenu.BackColor");
+
+            if (backColor == Color.Empty)
+                backColor = e.BackColor;
+
+            using (var backgroundBrush = new SolidBrush(backColor))
+                e.Graphics.FillRectangle(backgroundBrush, e.Bounds);
+        }
+
+        private void DrawItemFocusRectangle(Color focusColor, DrawItemEventArgs e)
+        {
+            if ((e.State & DrawItemState.Focus) != 0 || (e.State & DrawItemState.NoFocusRect) == 0)
+            {
+                // Draw a selection box and label in the selection text color
+                var rectangle = e.Bounds;
+                rectangle.Inflate(-1, -1);
+
+                using (var focusBrush = new SolidBrush(focusColor))
+                    e.Graphics.FillRectangle(focusBrush, rectangle);
             }
         }
 
