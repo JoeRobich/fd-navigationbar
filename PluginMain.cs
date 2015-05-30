@@ -160,6 +160,18 @@ namespace NavigationBar
                     else if (de.Action == ProjectManagerCommands.OpenProject)
                         NavigationManager.Instance.Clear();
             }
+            else if (e.Type == EventType.ApplyTheme)
+            {
+                foreach (var document in PluginBase.MainForm.Documents)
+                {
+                    if (document.SciControl == null)
+                        continue;
+
+                    var bar = GetNavigationBar(document);
+                    if (bar != null)
+                        bar.ApplyTheme();
+                }
+            }
 		}
 
         void _settings_OnSettingsChanged()
@@ -262,7 +274,7 @@ namespace NavigationBar
         public void AddEventHandlers()
         {
             // Set events you want to listen (combine as flags)
-            EventManager.AddEventHandler(this, EventType.FileNew | EventType.FileOpen | EventType.FileSwitch | EventType.Command);
+            EventManager.AddEventHandler(this, EventType.FileNew | EventType.FileOpen | EventType.FileSwitch | EventType.Command | EventType.ApplyTheme);
             NavigationManager.Instance.LocationChanged += new EventHandler(NavigationManager_LocationChanged);
             _settings.OnSettingsChanged += new SettingsChangesEvent(_settings_OnSettingsChanged);
         }

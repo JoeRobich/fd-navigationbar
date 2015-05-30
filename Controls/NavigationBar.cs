@@ -62,10 +62,11 @@ namespace NavigationBar.Controls
             if (_icons == null)
                 InitializeIcons();
 
-            Renderer = new DockPanelStripRenderer();
-            importComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
-            classComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
-            memberComboBox.FlatStyle = PluginBase.Settings.ComboBoxFlatStyle;
+            Renderer = new DockPanelStripRenderer(false);
+            BackColor = PluginBase.MainForm.GetThemeColor("ToolStripComboBoxControl.BorderColor");
+            importComboBox.FlatStyle = FlatStyle.System;
+            classComboBox.FlatStyle = FlatStyle.System;
+            memberComboBox.FlatStyle = FlatStyle.System;
 
             _document = document;
             _fileModel = ASContext.Context.CurrentModel;
@@ -86,9 +87,9 @@ namespace NavigationBar.Controls
 
             SuspendLayout();
 
-            // 
+            //
             // dropDown search
-            // 
+            //
             _dropDownSearchTimer = new Timer();
             _dropDownSearchTimer.Tick += new EventHandler(dropDownSearchTimer_Tick);
             _dropDownSearchKey = "";
@@ -96,39 +97,36 @@ namespace NavigationBar.Controls
             //
             // importComboBox
             //
-            importComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
+            importComboBox.FlatCombo.DrawMode = DrawMode.OwnerDrawFixed;
             importComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            importComboBox.Margin = new Padding(0, 0, 0, 0);
-            importComboBox.MaxDropDownItems = 25;
+            importComboBox.FlatCombo.MaxDropDownItems = 25;
             importComboBox.Name = "importComboBox";
-            importComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
-            importComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
+            importComboBox.FlatCombo.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            importComboBox.FlatCombo.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
             importComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
-            importComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
+            importComboBox.FlatCombo.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
             //
             // classComboBox
             //
-            classComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
+            classComboBox.FlatCombo.DrawMode = DrawMode.OwnerDrawFixed;
             classComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            classComboBox.Margin = new Padding(0, 0, 0, 0);
-            classComboBox.MaxDropDownItems = 25;
+            classComboBox.FlatCombo.MaxDropDownItems = 25;
             classComboBox.Name = "classComboBox";
-            classComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
-            classComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
+            classComboBox.FlatCombo.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            classComboBox.FlatCombo.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
             classComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
-            classComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
+            classComboBox.FlatCombo.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
             //
             // memberComboBox
             //
-            memberComboBox.ComboBox.DrawMode = DrawMode.OwnerDrawFixed;
+            memberComboBox.FlatCombo.DrawMode = DrawMode.OwnerDrawFixed;
             memberComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            memberComboBox.Margin = new Padding(0, 0, 0, 0);
-            memberComboBox.MaxDropDownItems = 25;
+            memberComboBox.FlatCombo.MaxDropDownItems = 25;
             memberComboBox.Name = "memberComboBox";
-            memberComboBox.ComboBox.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
-            memberComboBox.ComboBox.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
+            memberComboBox.FlatCombo.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            memberComboBox.FlatCombo.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
             memberComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
-            memberComboBox.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
+            memberComboBox.FlatCombo.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
             //
             // updateTimer
             //
@@ -142,6 +140,7 @@ namespace NavigationBar.Controls
             Items.AddRange(new ToolStripItem[] {
                 importComboBox, classComboBox, memberComboBox });
             Name = "NavigationBar";
+            Padding = new Padding(ScaleHelper.Scale(2));
             Stretch = true;
             Visible = false;
             ResumeLayout(false);
@@ -150,6 +149,7 @@ namespace NavigationBar.Controls
         private void InitializeContextMenu()
         {
             ContextMenuStrip menu = new ContextMenuStrip();
+            menu.Renderer = new DockPanelStripRenderer();
 
             _showImportDropDownItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.ShowImportedClasses"), null, new EventHandler(ShowImportsDropDown));
             _showSuperClassesItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.ShowSuperClasses"), null, new EventHandler(ShowSuperClasses));
@@ -307,36 +307,36 @@ namespace NavigationBar.Controls
         {
             if (_settings.ShowImportedClasses)
             {
-                if (classComboBox.DroppedDown)
-                    classComboBox.DroppedDown = false;
-                else if (memberComboBox.DroppedDown)
-                    memberComboBox.DroppedDown = false;
+                if (classComboBox.FlatCombo.DroppedDown)
+                    classComboBox.FlatCombo.DroppedDown = false;
+                else if (memberComboBox.FlatCombo.DroppedDown)
+                    memberComboBox.FlatCombo.DroppedDown = false;
 
                 importComboBox.Focus();
-                importComboBox.DroppedDown = true;
+                importComboBox.FlatCombo.DroppedDown = true;
             }
         }
 
         public void OpenClasses()
         {
-            if (importComboBox.DroppedDown)
-                importComboBox.DroppedDown = false;
-            else if (memberComboBox.DroppedDown)
-                memberComboBox.DroppedDown = false;
+            if (importComboBox.FlatCombo.DroppedDown)
+                importComboBox.FlatCombo.DroppedDown = false;
+            else if (memberComboBox.FlatCombo.DroppedDown)
+                memberComboBox.FlatCombo.DroppedDown = false;
 
             classComboBox.Focus();
-            classComboBox.DroppedDown = true;
+            classComboBox.FlatCombo.DroppedDown = true;
         }
 
         public void OpenMembers()
         {
-            if (importComboBox.DroppedDown)
-                importComboBox.DroppedDown = false;
-            else if (classComboBox.DroppedDown)
-                classComboBox.DroppedDown = false;
+            if (importComboBox.FlatCombo.DroppedDown)
+                importComboBox.FlatCombo.DroppedDown = false;
+            else if (classComboBox.FlatCombo.DroppedDown)
+                classComboBox.FlatCombo.DroppedDown = false;
 
             memberComboBox.Focus();
-            memberComboBox.DroppedDown = true;
+            memberComboBox.FlatCombo.DroppedDown = true;
         }
 
         #endregion
@@ -412,7 +412,7 @@ namespace NavigationBar.Controls
 
         private void comboBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            ComboBox comboBox = ((ToolStripSpringComboBox)sender).ComboBox;
+            ComboBox comboBox = ((ToolStripSpringComboBox)sender).FlatCombo;
             string searchKey = e.KeyChar.ToString();
 
             if (_settings.DropDownMultiKeyEnabled)
@@ -441,20 +441,6 @@ namespace NavigationBar.Controls
         {
             // Update ForeColor and BackColor if a theme overrides the defaults
             ComboBox comboBox = sender as ComboBox;
-
-            if (PluginBase.MainForm.GetThemeValue("ToolStripComboBoxControl.ForeColor") != null)
-            {
-                var foreColor = PluginBase.MainForm.GetThemeColor("ToolStripComboBoxControl.ForeColor");
-                if (comboBox.ForeColor != foreColor)
-                    comboBox.ForeColor = foreColor;
-            }
-
-            if (PluginBase.MainForm.GetThemeValue("ToolStripComboBoxControl.BackColor") != null)
-            {
-                var backColor = PluginBase.MainForm.GetThemeColor("ToolStripComboBoxControl.BackColor");
-                if (comboBox.BackColor != backColor)
-                    comboBox.BackColor = backColor;
-            }
 
             // If we drawing an item that exists
             if (e.Index > -1)
@@ -563,7 +549,7 @@ namespace NavigationBar.Controls
 
         private void BuildClassDropDown()
         {
-            classComboBox.BeginUpdate();
+            classComboBox.FlatCombo.BeginUpdate();
 
             classComboBox.Items.Clear();
 
@@ -610,7 +596,7 @@ namespace NavigationBar.Controls
             // Select the class that contains the caret
             UpdateClassDropDown();
 
-            classComboBox.EndUpdate();
+            classComboBox.FlatCombo.EndUpdate();
         }
 
         private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited, bool isImported)
@@ -624,7 +610,7 @@ namespace NavigationBar.Controls
 
         private void BuildMemberDropDown()
         {
-            memberComboBox.BeginUpdate();
+            memberComboBox.FlatCombo.BeginUpdate();
 
             memberComboBox.Items.Clear();
 
@@ -671,7 +657,7 @@ namespace NavigationBar.Controls
             // Select the member that contains the caret
             UpdateMemberDropDown();
 
-            memberComboBox.EndUpdate();
+            memberComboBox.FlatCombo.EndUpdate();
         }
 
         private List<MemberTreeNode> GetInheritedMembers(ClassModel classModel)
@@ -958,6 +944,15 @@ namespace NavigationBar.Controls
             // Forces a rebuild of the dropdowns
             _textChanged = true;
             updateTimer.Start();
+        }
+
+        public void ApplyTheme()
+        {
+            PluginBase.MainForm.ThemeControls(this);
+
+            var backColor = PluginBase.MainForm.GetThemeColor("ToolStripComboBoxControl.BorderColor");
+            if (BackColor != Color.Empty)
+                BackColor = backColor;
         }
 
         private void UpdateNavigationBar()
