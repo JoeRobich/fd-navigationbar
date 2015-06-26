@@ -45,6 +45,14 @@ namespace NavigationBar.Managers
             _updateTimer.Start();
         }
 
+        public NavigationLocation CurrentLocation
+        {
+            get
+            {
+                return _currentLocation;
+            }
+        }
+
         public bool CanNavigateForward
         {
             get
@@ -157,9 +165,6 @@ namespace NavigationBar.Managers
                 if (ASContext.CurSciControl == null)
                     return false;
 
-                if (_currentLocation.Position == ASContext.CurSciControl.CurrentPos)
-                    return false;
-
                 // If there is no context then don't track
                 if (ASContext.HasContext == false)
                     return false;
@@ -167,6 +172,9 @@ namespace NavigationBar.Managers
                 // If we have changed files then we've moved
                 if (_currentLocation.FilePath != ASContext.Context.CurrentFile)
                     return true;
+
+                if (_currentLocation.Position == ASContext.CurSciControl.CurrentPos)
+                    return false;
 
                 // If the current class has changed then we've moved
                 string currentClass = ASContext.Context.CurrentClass == null ? string.Empty : ASContext.Context.CurrentClass.Name;
@@ -192,9 +200,17 @@ namespace NavigationBar.Managers
             if (CanNavigateForward)
                 _forwardStack.Clear();
 
-            _backwardStack.Push(_currentLocation);
-
+            var lastLocation = _currentLocation;
             _currentLocation = GetCurrentLocation();
+
+            // Is a new member name being typed?
+            if ((lastLocation.FilePath == _currentLocation.FilePath &&
+                lastLocation.LineFrom == _currentLocation.LineFrom) ||
+                lastLocation.MemberName == _currentLocation.MemberName)
+                return;
+
+            if (!string.IsNullOrEmpty(_currentLocation.MemberName))
+                _backwardStack.Push(lastLocation);
 
             OnLocationChanged();
         }
@@ -228,7 +244,7 @@ namespace NavigationBar.Managers
 
     #region Custom Structures
 
-    class NavigationLocation
+    public class NavigationLocation
     {
         public string FilePath { get; set; }
         public int Position { get; set; }
@@ -239,7 +255,10 @@ namespace NavigationBar.Managers
 
         public override string ToString()
         {
-            return string.Format("{0} {1}.{2} Line: {3}", Path.GetFileName(FilePath), ClassName, MemberName, LineFrom);
+            if (string.IsNullOrEmpty(MemberName))
+                return string.Format("{0} {1} Line: {2}", Path.GetFileName(FilePath), ClassName, LineFrom);
+            else
+                return string.Format("{0} {1}.{2} Line: {3}", Path.GetFileName(FilePath), ClassName, MemberName, LineFrom);
         }
     }
 

@@ -3,6 +3,7 @@ using ASCompletion.Context;
 using ASCompletion.Model;
 using ASCompletion.Settings;
 using NavigationBar.Helpers;
+using NavigationBar.Managers;
 using PluginCore;
 using PluginCore.Controls;
 using PluginCore.Helpers;
@@ -11,7 +12,7 @@ using ScintillaNet;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -350,9 +351,7 @@ namespace NavigationBar.Controls
 
         private void HookEvents()
         {
-            // Check for whether the cursor has moved
-            _document.SplitSci1.UpdateUI += new UpdateUIHandler(_scintella_UpdateUI);
-            _document.SplitSci2.UpdateUI += new UpdateUIHandler(_scintella_UpdateUI);
+            NavigationManager.Instance.LocationChanged += NavigationManager_LocationChanged;
 
             // The code has changed so we will need to rebuild the dropdowns
             _document.SplitSci1.TextInserted += new TextInsertedHandler(_scintilla_TextChanged);
@@ -363,14 +362,17 @@ namespace NavigationBar.Controls
 
         private void UnhookEvents()
         {
-            // We are not in a code file so we should unhook
-            _document.SplitSci1.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
-            _document.SplitSci2.UpdateUI -= new UpdateUIHandler(_scintella_UpdateUI);
+            NavigationManager.Instance.LocationChanged -= NavigationManager_LocationChanged;
 
             _document.SplitSci1.TextInserted -= new TextInsertedHandler(_scintilla_TextChanged);
             _document.SplitSci1.TextDeleted -= new TextDeletedHandler(_scintilla_TextChanged);
 
             _settings.OnSettingsChanged += new SettingsChangesEvent(_settings_OnSettingsChanged);
+        }
+
+        private void NavigationManager_LocationChanged(object sender, EventArgs e)
+        {
+            UpdateNavigationBar();
         }
 
         void _scintilla_TextChanged(ScintillaControl sender, int position, int length, int linesAdded)
@@ -383,12 +385,6 @@ namespace NavigationBar.Controls
         void updateTimer_Tick(object sender, EventArgs e)
         {
             // The text has changed and the model may have updated
-            UpdateNavigationBar();
-        }
-
-        void _scintella_UpdateUI(ScintillaControl sender)
-        {
-            // The caret may have moved
             UpdateNavigationBar();
         }
 
@@ -499,7 +495,7 @@ namespace NavigationBar.Controls
 
         private void DrawItemFocusRectangle(Color focusColor, DrawItemEventArgs e)
         {
-            if ((e.State & DrawItemState.Focus) != 0 || (e.State & DrawItemState.NoFocusRect) == 0)
+            if ((e.State & DrawItemState.Focus) != 0)
             {
                 // Draw a selection box and label in the selection text color
                 var rectangle = e.Bounds;
@@ -541,26 +537,22 @@ namespace NavigationBar.Controls
 
         private void BuildImportDropDown()
         {
+            importComboBox.FlatCombo.BeginUpdate();
+
+            var currentNodes = importComboBox.Items.OfType<MemberTreeNode>().ToList();
             importComboBox.Items.Clear();
 
             if (ASContext.Context.CurrentModel != null && _settings.ShowImportedClasses)
             {
-                List<MemberTreeNode> importNodes = new List<MemberTreeNode>();
+                // Remove not needed imports
+                var importModels = ASContext.Context.CurrentModel.Imports.OfType<MemberModel>().ToList();
+                var existingNodes = currentNodes.Where(n => importModels.Any(m => m.Type == n.Model.Type));
+                var newNodes = importModels.Where(importModel => !importModel.Type.EndsWith(".*") && !existingNodes.Any(importNode => importNode.Model.Type == importModel.Type))
+                    .Select(importModel => ASContext.Context.ResolveType(importModel.Type, ASContext.Context.CurrentModel))
+                    .Where(classModel => classModel != null && !classModel.IsVoid() && classModel.InFile != null)
+                    .Select(classModel => GetClassTreeNode(classModel, false, true));
 
-                // Add all the imported classes from this file
-                foreach (MemberModel importModel in ASContext.Context.CurrentModel.Imports)
-                {
-                    // ignore package imports
-                    if (!importModel.Type.EndsWith(".*"))
-                    {
-                        ClassModel classModel = ASContext.Context.ResolveType(importModel.Type, ASContext.Context.CurrentModel);
-                        if (!classModel.IsVoid() && classModel.InFile != null)
-                        {
-                            MemberTreeNode node = GetClassTreeNode(classModel, false, true);
-                            importNodes.Add(node);
-                        }
-                    }
-                }
+                var importNodes = existingNodes.Concat(newNodes).ToList();
 
                 // Apply member sort
                 if (_memberSort != null)
@@ -568,6 +560,8 @@ namespace NavigationBar.Controls
 
                 importComboBox.Items.AddRange(importNodes.ToArray());
             }
+
+            importComboBox.FlatCombo.EndUpdate();
         }
 
         private void BuildClassDropDown()
@@ -578,8 +572,8 @@ namespace NavigationBar.Controls
 
             if (ASContext.Context.CurrentModel != null)
             {
-                List<MemberTreeNode> classNodes = new List<MemberTreeNode>();
-                List<string> classNames = new List<string>();
+                var classNodes = new List<MemberTreeNode>();
+                var classNames = new List<string>();
 
                 // Add all the classes from this file
                 foreach (ClassModel classModel in ASContext.Context.CurrentModel.Classes)
@@ -589,20 +583,15 @@ namespace NavigationBar.Controls
 
                     if (_settings.ShowSuperClasses)
                     {
-                        // While extended class is not null, Object, Void, or haXe Dynamic
                         var extendClassModel = classModel.Extends;
-                        while (extendClassModel != null &&
-                               extendClassModel.Name != "Object" &&
-                               extendClassModel != ClassModel.VoidClass &&
-                               (!extendClassModel.InFile.haXe || extendClassModel.Type != "Dynamic"))
+                        while (!IsRootType(extendClassModel))
                          {
                             // Have we already added this class? Multiple classes could extend the same base.
                             if (classNames.Contains(extendClassModel.QualifiedName))
                                 break;
-                            classNames.Add(extendClassModel.QualifiedName);
 
-                            node = GetClassTreeNode(extendClassModel, true, false);
-                            classNodes.Add(node);
+                            classNames.Add(extendClassModel.QualifiedName);
+                            classNodes.Add(GetClassTreeNode(extendClassModel, true, false));
 
                             extendClassModel = extendClassModel.Extends;
                         }
@@ -685,25 +674,15 @@ namespace NavigationBar.Controls
 
         private List<MemberTreeNode> GetInheritedMembers(ClassModel classModel)
         {
-            List<MemberTreeNode> memberNodes = new List<MemberTreeNode>();
+            var memberNodes = new List<MemberTreeNode>();
 
             // Add members from our super class as long as it is not null, Object, Void, or haXe Dynamic
-            while (classModel != null &&
-                   classModel.Name != "Object" &&
-                   classModel != ClassModel.VoidClass &&
-                   (!classModel.InFile.haXe || classModel.Type != "Dynamic"))
+            while (!IsRootType(classModel))
             {
-                MemberList members = classModel.Members;
-
-                foreach (MemberModel member in members)
-                {
-                    MemberTreeNode node = GetMemberTreeNode(member, classModel);
-
-                    if (node != null)
-                    {
-                        memberNodes.Add(node);
-                    }
-                }
+                memberNodes.AddRange(classModel.Members
+                    .OfType<MemberModel>()
+                    .Select(member => GetMemberTreeNode(member, classModel))
+                    .Where(node => node != null));
 
                 // Follow the inheritence chain down
                 classModel = classModel.Extends;
@@ -946,6 +925,14 @@ namespace NavigationBar.Controls
 
         #region Other Methods
 
+        private bool IsRootType(ClassModel classModel)
+        {
+            return classModel == null ||
+                   classModel.Name == "Object" ||
+                   classModel == ClassModel.VoidClass ||
+                   (classModel.InFile.haXe && classModel.Type == "Dynamic");
+        }
+
         public void RefreshSettings()
         {
             UpdateContextMenu();
@@ -1047,11 +1034,9 @@ namespace NavigationBar.Controls
                 InheritedMemberTreeNode inheritedNode = (InheritedMemberTreeNode)node;
                 FileModel model = ModelsExplorer.Instance.OpenFile(inheritedNode.ClassModel.InFile.FileName);
 
+                // We have to update the Tag to reflect the line number the member starts on
                 if (!(node is InheritedClassTreeNode))
-                {
-                    // We have to update the Tag to reflect the line number the member starts on
-                    inheritedNode.Tag = GetInheritedMemberTag(model, inheritedNode.Model.Name);
-                }
+                    inheritedNode.Tag = GetInheritedMemberTag(model, inheritedNode.Model.Name) ?? string.Empty;
             }
             else if (node is ImportTreeNode)
             {
@@ -1071,12 +1056,11 @@ namespace NavigationBar.Controls
 
         private string GetInheritedMemberTag(FileModel model, string memberName)
         {
-            // Search for the member and return it's location
-            foreach (ClassModel classModel in model.Classes)
-                foreach (MemberModel memberModel in classModel.Members)
-                    if (memberName == memberModel.Name)
-                        return memberModel.Name + "@" + memberModel.LineFrom;
-            return string.Empty;
+            return model.Classes
+                .SelectMany(classModel => classModel.Members.Cast<MemberModel>())
+                .Where(memberModel => memberModel.Name == memberName)
+                .Select(memberModel => memberModel.Name + "@" + memberModel.LineFrom)
+                .FirstOrDefault();
         }
 
         #endregion
@@ -1086,8 +1070,8 @@ namespace NavigationBar.Controls
 
     class MemberTreeNode : TreeNode
     {
-        protected string _label = "";
-        protected MemberModel _model = null;
+        public MemberModel Model { get; protected set; }
+        public string Label { get; protected set; }
 
         public MemberTreeNode(MemberModel memberModel, int imageIndex, bool labelPropertiesLikeFunctions)
             : base(memberModel.ToString(), imageIndex, imageIndex)
@@ -1097,54 +1081,30 @@ namespace NavigationBar.Controls
             {
                 List<string> paramList = new List<string>();
                 if (memberModel.Parameters != null)
-                    foreach (var param in memberModel.Parameters)
-                        paramList.Add(string.Format("{0}:{1}", param.Name, param.Type));
+                    paramList.AddRange(memberModel.Parameters.Select(param => string.Format("{0}:{1}", param.Name, param.Type)));
 
-                _label = string.Format("{0} ({1}) : {2}", memberModel.Name, string.Join(", ", paramList.ToArray()), memberModel.Type);
+                Label = string.Format("{0} ({1}) : {2}", memberModel.Name, string.Join(", ", paramList.ToArray()), memberModel.Type);
             }
             else
             {
-                _label = Text;
+                Label = Text;
             }
-            _model = memberModel;
+
+            Model = memberModel;
             Tag = memberModel.Name + "@" + memberModel.LineFrom;
-        }
-
-        public MemberModel Model
-        {
-            get
-            {
-                return _model;
-            }
-        }
-
-        public string Label
-        {
-            get
-            {
-                return _label;
-            }
         }
     }
 
     class InheritedMemberTreeNode : MemberTreeNode
     {
-        protected ClassModel _classModel = null;
-
         public InheritedMemberTreeNode(ClassModel classModel, MemberModel memberModel, int imageIndex, bool labelPropertiesLikeFunctions)
             : base(memberModel, imageIndex, labelPropertiesLikeFunctions)
         {
-            _label = Text + " - " + classModel.Name;
-            _classModel = classModel;
+            Label = Text + " - " + classModel.Name;
+            ClassModel = classModel;
         }
 
-        public ClassModel ClassModel
-        {
-            get
-            {
-                return _classModel;
-            }
-        }
+        public ClassModel ClassModel { get; protected set; }
     }
 
     class ImportTreeNode : MemberTreeNode
@@ -1154,18 +1114,20 @@ namespace NavigationBar.Controls
         {
             Text = importModel.Name;
             Tag = "class";
-            _label = showQualifiedClassNames ? importModel.QualifiedName : importModel.Name;
+            Label = showQualifiedClassNames ? importModel.QualifiedName : importModel.Name;
         }
     }
 
     class ClassTreeNode : MemberTreeNode
     {
+        public ClassModel ClassModel { get { return (ClassModel)Model; } }
+
         public ClassTreeNode(ClassModel classModel, int imageIndex, bool showQualifiedClassNames)
             : base(classModel, imageIndex, false)
         {
             Text = classModel.Name;
             Tag = "class";
-            _label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
+            Label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
         }
     }
 
@@ -1176,7 +1138,7 @@ namespace NavigationBar.Controls
         {
             Text = classModel.Name;
             Tag = "class";
-            _label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
+            Label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
         }
     }
 
@@ -1208,8 +1170,6 @@ namespace NavigationBar.Controls
 
             return memberSort;
         }
-
-
 
         public MemberTreeNodeComparer(IComparer<MemberModel> memberModelComparer)
         {
