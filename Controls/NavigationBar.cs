@@ -141,7 +141,7 @@ namespace NavigationBar.Controls
             Items.AddRange(new ToolStripItem[] {
                 importComboBox, classComboBox, memberComboBox });
             Name = "NavigationBar";
-            Padding = new Padding(ScaleHelper.Scale(2));
+            Padding = new Padding(0, ScaleHelper.Scale(1), 0, ScaleHelper.Scale(1));
             Stretch = true;
             Visible = false;
             ResumeLayout(false);
