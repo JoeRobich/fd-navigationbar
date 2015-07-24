@@ -47,7 +47,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controls\ClassTreeNode.cs" />
+    <Compile Include="Controls\ImportTreeNode.cs" />
+    <Compile Include="Controls\InheritedClassTreeNode.cs" />
+    <Compile Include="Controls\InheritedMemberTreeNode.cs" />
+    <Compile Include="Controls\MemberTreeNode.cs" />
+    <Compile Include="Controls\MemberTreeNodeComparer.cs" />
+    <Compile Include="Controls\NavigationBarContextMenu.cs">
+      <SubType>component</SubType>
+    </Compile>
+    <Compile Include="Helpers\DropDownBuilder.cs" />
+    <Compile Include="Helpers\ItemRenderer.cs" />
+    <Compile Include="Helpers\NavigationHelper.cs" />
     <Compile Include="Helpers\ResourceHelper.cs" />
+    <Compile Include="Helpers\SearchHelper.cs" />
     <Compile Include="Localization\Attributes.cs" />
     <Compile Include="Controls\NavigationBar.cs">
       <SubType>Component</SubType>

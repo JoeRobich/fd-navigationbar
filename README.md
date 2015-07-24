@@ -12,6 +12,7 @@ Also adds an optional navigation toolbar for moving back and forth through your 
 [Releases](https://github.com/JoeRobich/fd-navigationbar/releases/) 
 
 ## History
+**v2.6.1** - Set UpdateTimer.Interval to 500ms.   
 **v2.6** - NavigationBar no longer listens to UpdateUI event. Fixed selected item rendering.  
 **v2.5.1** - Handle ApplyTheme event. Updated dropdown rendering to be more themey.  
 **v2.5** - Improved dropdown layout. Navigate Forward/Backward buttons now have a dropdown of the history.  

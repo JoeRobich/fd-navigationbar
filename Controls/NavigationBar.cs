@@ -1,86 +1,60 @@
-﻿using ASCompletion;
-using ASCompletion.Context;
+﻿using ASCompletion.Context;
 using ASCompletion.Model;
-using ASCompletion.Settings;
 using NavigationBar.Helpers;
 using NavigationBar.Managers;
 using PluginCore;
 using PluginCore.Controls;
 using PluginCore.Helpers;
-using PluginCore.Localization;
 using ScintillaNet;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
 
 namespace NavigationBar.Controls
 {
     public partial class NavigationBar : ToolStripEx, IDisposable
     {
-        private static Bitmap[] _icons = null;
-        private bool _updating = false;
-        private int _lastPosition = -1;
-        private bool _textChanged = false;
-        private bool _completeBuild = false;
-        private bool _disposed = false;
+        bool _updating = false;
+        int _lastPosition = -1;
+        bool _textChanged = false;
+        bool _completeBuild = false;
+        bool _disposed = false;
 
-        private ToolStripSpringComboBox importComboBox;
-        private ToolStripSpringComboBox classComboBox;
-        private ToolStripSpringComboBox memberComboBox;
-        private Timer updateTimer;
+        NavigationBarContextMenu contextMenu;
+        ToolStripSpringComboBox importComboBox;
+        ToolStripSpringComboBox classComboBox;
+        ToolStripSpringComboBox memberComboBox;
+        Timer updateTimer;
 
-        private Settings _settings = null;
-        private MemberTreeNodeComparer _memberSort = null;
+        ITabbedDocument _document = null;
+        Settings _settings = null;
 
-        private FileModel _fileModel = null;
-        private ITabbedDocument _document = null;
-
-        private TreeNode _lastSelectedClassNode = null;
-        private TreeNode _lastSelectedMemberNode = null;
-
-        private ToolStripMenuItem _showImportDropDownItem;
-        private ToolStripMenuItem _showSuperClassesItem;
-        private ToolStripMenuItem _showInheritedMembersItem;
-
-        private ToolStripMenuItem _sortNoneItem;
-        private ToolStripMenuItem _sortSortedItem;
-        private ToolStripMenuItem _sortByKindItem;
-        private ToolStripMenuItem _sortSmartItem;
-
-        private string _dropDownSearchKey;
-        private Timer _dropDownSearchTimer;
-
-        #region Initializing and Disposing
+        TreeNode _lastSelectedClassNode = null;
+        TreeNode _lastSelectedMemberNode = null;
 
         public NavigationBar(ITabbedDocument document, Settings settings)
         {
-            InitializeComponent();
-            InitializeContextMenu();
+            _document = document;
 
-            if (_icons == null)
-                InitializeIcons();
+            _settings = settings;
+            SearchHelper.Settings = settings;
+            DropDownBuilder.Settings = settings;
+
+            InitializeComponent();
 
             Renderer = new DockPanelStripRenderer(false);
             BackColor = PluginBase.MainForm.GetThemeColor("ToolStripComboBoxControl.BorderColor");
-            importComboBox.FlatStyle = FlatStyle.System;
-            classComboBox.FlatStyle = FlatStyle.System;
-            memberComboBox.FlatStyle = FlatStyle.System;
-
-            _document = document;
-            _fileModel = ASContext.Context.CurrentModel;
-
-            _settings = settings;
 
             RefreshSettings();
             HookEvents();
+
             updateTimer.Start();
         }
 
         private void InitializeComponent()
         {
+            contextMenu = new NavigationBarContextMenu(_settings);
             importComboBox = new ToolStripSpringComboBox();
             classComboBox = new ToolStripSpringComboBox();
             memberComboBox = new ToolStripSpringComboBox();
@@ -88,144 +62,51 @@ namespace NavigationBar.Controls
 
             SuspendLayout();
 
-            //
-            // dropDown search
-            //
-            _dropDownSearchTimer = new Timer();
-            _dropDownSearchTimer.Tick += new EventHandler(dropDownSearchTimer_Tick);
-            _dropDownSearchKey = "";
-
-            //
             // importComboBox
-            //
             importComboBox.FlatCombo.DrawMode = DrawMode.OwnerDrawFixed;
+            importComboBox.FlatStyle = FlatStyle.System;
             importComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             importComboBox.FlatCombo.MaxDropDownItems = 25;
             importComboBox.Name = "importComboBox";
-            importComboBox.FlatCombo.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            importComboBox.FlatCombo.DrawItem += ItemRenderer.ComboBox_DrawItem;
             importComboBox.FlatCombo.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
-            importComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
+            importComboBox.KeyPress += SearchHelper.ComboBox_KeyPress;
             importComboBox.FlatCombo.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
-            //
             // classComboBox
-            //
             classComboBox.FlatCombo.DrawMode = DrawMode.OwnerDrawFixed;
+            classComboBox.FlatStyle = FlatStyle.System;
             classComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             classComboBox.FlatCombo.MaxDropDownItems = 25;
             classComboBox.Name = "classComboBox";
-            classComboBox.FlatCombo.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            classComboBox.FlatCombo.DrawItem += ItemRenderer.ComboBox_DrawItem;
             classComboBox.FlatCombo.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
-            classComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
+            classComboBox.KeyPress += SearchHelper.ComboBox_KeyPress;
             classComboBox.FlatCombo.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
-            //
             // memberComboBox
-            //
             memberComboBox.FlatCombo.DrawMode = DrawMode.OwnerDrawFixed;
+            memberComboBox.FlatStyle = FlatStyle.System;
             memberComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             memberComboBox.FlatCombo.MaxDropDownItems = 25;
             memberComboBox.Name = "memberComboBox";
-            memberComboBox.FlatCombo.DrawItem += new DrawItemEventHandler(comboBox_DrawItem);
+            memberComboBox.FlatCombo.DrawItem += ItemRenderer.ComboBox_DrawItem;
             memberComboBox.FlatCombo.SelectionChangeCommitted += new EventHandler(comboBox_SelectionChangeCommitted);
-            memberComboBox.KeyPress += new KeyPressEventHandler(comboBox_KeyPress);
+            memberComboBox.KeyPress += SearchHelper.ComboBox_KeyPress;
             memberComboBox.FlatCombo.DropDownClosed += new EventHandler(comboBox_DropDownClosed);
-            //
             // updateTimer
-            //
+            updateTimer.Interval = 500;
             updateTimer.Tick += new EventHandler(updateTimer_Tick);
-            //
             // NavigationBar
-            //
             CanOverflow = false;
+            ContextMenuStrip = contextMenu;
             Dock = DockStyle.Top;
             GripStyle = ToolStripGripStyle.Hidden;
-            Items.AddRange(new ToolStripItem[] {
-                importComboBox, classComboBox, memberComboBox });
+            Items.AddRange(new ToolStripItem[] { importComboBox, classComboBox, memberComboBox });
             Name = "NavigationBar";
             Padding = new Padding(0, ScaleHelper.Scale(1), 0, ScaleHelper.Scale(1));
             Stretch = true;
             Visible = false;
+
             ResumeLayout(false);
-        }
-
-        private void InitializeContextMenu()
-        {
-            ContextMenuStrip menu = new ContextMenuStrip();
-            menu.Renderer = new DockPanelStripRenderer();
-
-            _showImportDropDownItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.ShowImportedClasses"), null, new EventHandler(ShowImportsDropDown));
-            _showSuperClassesItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.ShowSuperClasses"), null, new EventHandler(ShowSuperClasses));
-            _showInheritedMembersItem = new ToolStripMenuItem(ResourceHelper.GetString("NavigationBar.Label.ShowInheritedMembers"), null, new EventHandler(ShowInheritedMembers));
-
-            ToolStripMenuItem sortItem = new ToolStripMenuItem(TextHelper.GetString("ASCompletion.Outline.SortingMode"));
-
-            _sortNoneItem = new ToolStripMenuItem(TextHelper.GetString("ASCompletion.Outline.SortNone"), null, new EventHandler(SortNone));
-            _sortSortedItem = new ToolStripMenuItem(TextHelper.GetString("ASCompletion.Outline.SortDefault"), null, new EventHandler(SortSorted));
-            _sortByKindItem = new ToolStripMenuItem(TextHelper.GetString("ASCompletion.Outline.SortedByKind"), null, new EventHandler(SortByKind));
-            _sortSmartItem = new ToolStripMenuItem(TextHelper.GetString("ASCompletion.Outline.SortedSmart"), null, new EventHandler(SmartSort));
-
-            sortItem.DropDownItems.Add(_sortNoneItem);
-            sortItem.DropDownItems.Add(_sortSortedItem);
-            sortItem.DropDownItems.Add(_sortByKindItem);
-            sortItem.DropDownItems.Add(_sortSmartItem);
-
-            menu.Items.Add(_showImportDropDownItem);
-            menu.Items.Add(_showSuperClassesItem);
-            menu.Items.Add(_showInheritedMembersItem);
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(sortItem);
-
-            ContextMenuStrip = menu;
-        }
-
-        private void InitializeIcons()
-        {
-            //Pull the member icons from the resources;
-            _icons = new Bitmap[] {
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("FilePlain.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("FolderClosed.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("FolderOpen.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("CheckAS.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("QuickBuild.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Package.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Interface.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Intrinsic.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Class.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Variable.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariablePrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableStatic.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableStaticProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("VariableStaticPrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Const.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstPrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Const.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("ConstPrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Method.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodPrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodStatic.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodStaticProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("MethodStaticPrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Property.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyPrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyStatic.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyStaticProtected.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("PropertyStaticPrivate.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Template.png"))),
-                ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("Declaration.png")))
-            };
-        }
-
-        public static System.IO.Stream GetStream(string name)
-        {
-            string prefix = "NavigationBar.Icons.";
-            List<string> resources = new List<string>(Assembly.GetExecutingAssembly().GetManifestResourceNames());
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            var stream = assembly.GetManifestResourceStream(prefix + name);
-            return stream;
         }
 
         public void Dispose()
@@ -243,66 +124,6 @@ namespace NavigationBar.Controls
                 Parent.Controls.Remove(this);
             Dispose();
         }
-
-        #endregion
-
-        #region Context Menu Handlers
-
-        private void ShowImportsDropDown(object sender, EventArgs e)
-        {
-            _settings.ShowImportedClasses = !_settings.ShowImportedClasses;
-        }
-
-        private void ShowSuperClasses(object sender, EventArgs e)
-        {
-            _settings.ShowSuperClasses = !_settings.ShowSuperClasses;
-        }
-
-        private void ShowInheritedMembers(object sender, EventArgs e)
-        {
-            _settings.ShowInheritedMembers = !_settings.ShowInheritedMembers;
-        }
-
-        private void SortNone(object sender, EventArgs e)
-        {
-            _settings.MemberSortMethod = OutlineSorting.None;
-        }
-
-        private void SortSorted(object sender, EventArgs e)
-        {
-            _settings.MemberSortMethod = OutlineSorting.Sorted;
-        }
-
-        private void SortByKind(object sender, EventArgs e)
-        {
-            _settings.MemberSortMethod = OutlineSorting.SortedByKind;
-        }
-
-        private void SmartSort(object sender, EventArgs e)
-        {
-            _settings.MemberSortMethod = OutlineSorting.SortedSmart;
-        }
-
-        private void UpdateContextMenu()
-        {
-            _showImportDropDownItem.Checked = _settings.ShowImportedClasses;
-            _showSuperClassesItem.Checked = _settings.ShowSuperClasses;
-            _showInheritedMembersItem.Checked = _settings.ShowInheritedMembers;
-            UpdateSortMenu();
-        }
-
-        private void UpdateSortMenu()
-        {
-            _sortNoneItem.Checked = _settings.MemberSortMethod == OutlineSorting.None ? true : false;
-            _sortSortedItem.Checked = _settings.MemberSortMethod == OutlineSorting.Sorted ? true : false;
-            _sortByKindItem.Checked = _settings.MemberSortMethod == OutlineSorting.SortedByKind ||
-                                      _settings.MemberSortMethod == OutlineSorting.SortedGroup ? true : false;
-            _sortSmartItem.Checked = _settings.MemberSortMethod == OutlineSorting.SortedSmart ? true : false;
-        }
-
-        #endregion
-
-        #region Public methods
 
         public void OpenImports()
         {
@@ -340,34 +161,25 @@ namespace NavigationBar.Controls
             memberComboBox.FlatCombo.DroppedDown = true;
         }
 
-        #endregion
-
-        #region Event Hooks and Handlers
-
-        private void _settings_OnSettingsChanged()
-        {
-            RefreshSettings();
-        }
-
         private void HookEvents()
         {
             NavigationManager.Instance.LocationChanged += NavigationManager_LocationChanged;
 
             // The code has changed so we will need to rebuild the dropdowns
-            _document.SplitSci1.TextInserted += new TextInsertedHandler(_scintilla_TextChanged);
-            _document.SplitSci1.TextDeleted += new TextDeletedHandler(_scintilla_TextChanged);
+            _document.SplitSci1.TextInserted += _scintilla_TextChanged;
+            _document.SplitSci1.TextDeleted += _scintilla_TextChanged;
 
-            _settings.OnSettingsChanged += new SettingsChangesEvent(_settings_OnSettingsChanged);
+            _settings.OnSettingsChanged += _settings_OnSettingsChanged;
         }
 
         private void UnhookEvents()
         {
             NavigationManager.Instance.LocationChanged -= NavigationManager_LocationChanged;
 
-            _document.SplitSci1.TextInserted -= new TextInsertedHandler(_scintilla_TextChanged);
-            _document.SplitSci1.TextDeleted -= new TextDeletedHandler(_scintilla_TextChanged);
+            _document.SplitSci1.TextInserted -= _scintilla_TextChanged;
+            _document.SplitSci1.TextDeleted -= _scintilla_TextChanged;
 
-            _settings.OnSettingsChanged += new SettingsChangesEvent(_settings_OnSettingsChanged);
+            _settings.OnSettingsChanged -= _settings_OnSettingsChanged;
         }
 
         private void NavigationManager_LocationChanged(object sender, EventArgs e)
@@ -375,10 +187,16 @@ namespace NavigationBar.Controls
             UpdateNavigationBar();
         }
 
+        private void _settings_OnSettingsChanged()
+        {
+            RefreshSettings();
+        }
+
         void _scintilla_TextChanged(ScintillaControl sender, int position, int length, int linesAdded)
         {
             // The text has changed start checking for the model to update
             _textChanged = true;
+            updateTimer.Stop();
             updateTimer.Start();
         }
 
@@ -391,399 +209,106 @@ namespace NavigationBar.Controls
         private void comboBox_SelectionChangeCommitted(object sender, EventArgs e)
         {
             ComboBox comboBox = sender as ComboBox;
-            // If we are not updating and the combobox has a selected item, then
-            // navigate to it
-            if (!_updating && comboBox.SelectedItem != null)
-                NavigateToMemberTreeNode(comboBox.SelectedItem as MemberTreeNode);
+
+            // If we are updating or the combobox has no selected item, then return
+            if (_updating || comboBox.SelectedItem == null)
+                return;
+
+            var node = comboBox.SelectedItem as MemberTreeNode;
+            NavigationHelper.NavigateTo(node);
+
+            // If navigating to an inherited class or member, we need to reset our combobox
+            if (node is InheritedMemberTreeNode || node is ImportTreeNode)
+                ResetDropDowns();
         }
 
         private void comboBox_DropDownClosed(object sender, EventArgs e)
         {
-            _dropDownSearchTimer.Stop();
-            _dropDownSearchKey = "";
+            SearchHelper.Reset();
 
             _document.SciControl.Focus();
             ResetDropDowns();
         }
 
-        private void comboBox_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            ComboBox comboBox = ((ToolStripSpringComboBox)sender).FlatCombo;
-            string searchKey = e.KeyChar.ToString();
-
-            if (_settings.DropDownMultiKeyEnabled)
-            {
-                _dropDownSearchTimer.Stop();
-                _dropDownSearchKey += searchKey;
-                _dropDownSearchTimer.Start();
-            }
-            else
-            {
-                _dropDownSearchKey = searchKey;
-            }
-
-            // If shift is pressed then reverse search
-            if ((ModifierKeys & Keys.Shift) == 0)
-            {
-                ForwardSearch(comboBox, _dropDownSearchKey);
-            }
-            else
-            {
-                ReverseSearch(comboBox, _dropDownSearchKey);
-            }
-        }
-
-        private void comboBox_DrawItem(object sender, DrawItemEventArgs e)
-        {
-            // Update ForeColor and BackColor if a theme overrides the defaults
-            ComboBox comboBox = sender as ComboBox;
-
-            // If we drawing an item that exists
-            if (e.Index > -1)
-            {
-                MemberTreeNode node = comboBox.Items[e.Index] as MemberTreeNode;
-
-                int imageWidth = _icons[0].Width;
-                int imageHeight = _icons[0].Height;
-
-                // Clear the old background
-                DrawItemBackground(comboBox, e);
-
-                var focusColor = PluginBase.MainForm.GetThemeColor("ToolStripItem.BackColor");
-                focusColor = focusColor != Color.Empty ? focusColor : e.BackColor;
-
-                // Is this item being hovered over?
-                DrawItemFocusRectangle(focusColor, e);
-
-                // Draw the item image
-                var imageRectangle = new Rectangle(e.Bounds.Left + 2, e.Bounds.Top, imageWidth, imageHeight);
-                e.Graphics.DrawImage(_icons[node.ImageIndex], imageRectangle);
-
-                var textPoint = new Point(imageRectangle.Right + 1, e.Bounds.Top);
-                Color textColor;
-
-                // Is this item disabled?
-                if ((e.State & DrawItemState.Disabled) != 0)
-                    textColor = SystemColors.GrayText;
-                // Is this item inherited?
-                else if (node is InheritedMemberTreeNode)
-                    textColor = Color.Gray;
-                // Are we using default highlighting?
-                else if (focusColor == e.BackColor)
-                    textColor = e.ForeColor;
-                else
-                    textColor = comboBox.ForeColor;
-
-                using (var textBrush = new SolidBrush(textColor))
-                    e.Graphics.DrawString(node.Label, comboBox.Font, textBrush, textPoint);
-            }
-        }
-
-        private void DrawItemBackground(ComboBox comboBox, DrawItemEventArgs e)
-        {
-            Color backColor;
-
-            if (e.Bounds.X == 0)
-                backColor = PluginBase.MainForm.GetThemeColor("ToolStripMenu.BackColor");
-
-            if (backColor == Color.Empty)
-                backColor = e.BackColor;
-
-            using (var backgroundBrush = new SolidBrush(backColor))
-                e.Graphics.FillRectangle(backgroundBrush, e.Bounds);
-        }
-
-        private void DrawItemFocusRectangle(Color focusColor, DrawItemEventArgs e)
-        {
-            if ((e.State & DrawItemState.Focus) != 0)
-            {
-                // Draw a selection box and label in the selection text color
-                var rectangle = e.Bounds;
-                rectangle.Inflate(-1, -1);
-
-                using (var focusBrush = new SolidBrush(focusColor))
-                    e.Graphics.FillRectangle(focusBrush, rectangle);
-            }
-        }
-
-        #endregion
-
-        #region Build DropDown Methods
-
         private void ShowImportDropDown()
         {
             if (!Items.Contains(importComboBox))
-            {
-                importComboBox.Visible = true;
                 Items.Insert(0, importComboBox);
-            }
         }
 
         private void HideImportDropDown()
         {
             if (Items.Contains(importComboBox))
-            {
-                importComboBox.Visible = false;
                 Items.Remove(importComboBox);
-            }
         }
 
         private void BuildDropDowns()
         {
-            BuildImportDropDown();
-            BuildClassDropDown();
-            BuildMemberDropDown();
+            DropDownBuilder.BuildImportDropDown(importComboBox);
+            DropDownBuilder.BuildClassDropDown(classComboBox);
+            DropDownBuilder.BuildMemberDropDown(classComboBox, memberComboBox);
+            UpdateDropDowns();
         }
-
-        private void BuildImportDropDown()
-        {
-            importComboBox.FlatCombo.BeginUpdate();
-
-            var currentNodes = importComboBox.Items.OfType<MemberTreeNode>().ToList();
-            importComboBox.Items.Clear();
-
-            if (ASContext.Context.CurrentModel != null && _settings.ShowImportedClasses)
-            {
-                // Remove not needed imports
-                var importModels = ASContext.Context.CurrentModel.Imports.OfType<MemberModel>().ToList();
-                var existingNodes = currentNodes.Where(n => importModels.Any(m => m.Type == n.Model.Type));
-                var newNodes = importModels.Where(importModel => !importModel.Type.EndsWith(".*") && !existingNodes.Any(importNode => importNode.Model.Type == importModel.Type))
-                    .Select(importModel => ASContext.Context.ResolveType(importModel.Type, ASContext.Context.CurrentModel))
-                    .Where(classModel => classModel != null && !classModel.IsVoid() && classModel.InFile != null)
-                    .Select(classModel => GetClassTreeNode(classModel, false, true));
-
-                var importNodes = existingNodes.Concat(newNodes).ToList();
-
-                // Apply member sort
-                if (_memberSort != null)
-                    importNodes.Sort(_memberSort);
-
-                importComboBox.Items.AddRange(importNodes.ToArray());
-            }
-
-            importComboBox.FlatCombo.EndUpdate();
-        }
-
-        private void BuildClassDropDown()
-        {
-            classComboBox.FlatCombo.BeginUpdate();
-
-            classComboBox.Items.Clear();
-
-            if (ASContext.Context.CurrentModel != null)
-            {
-                var classNodes = new List<MemberTreeNode>();
-                var classNames = new List<string>();
-
-                // Add all the classes from this file
-                foreach (ClassModel classModel in ASContext.Context.CurrentModel.Classes)
-                {
-                    MemberTreeNode node = GetClassTreeNode(classModel, false, false);
-                    classNodes.Add(node);
-
-                    if (_settings.ShowSuperClasses)
-                    {
-                        var extendClassModel = classModel.Extends;
-                        while (!IsRootType(extendClassModel))
-                         {
-                            // Have we already added this class? Multiple classes could extend the same base.
-                            if (classNames.Contains(extendClassModel.QualifiedName))
-                                break;
-
-                            classNames.Add(extendClassModel.QualifiedName);
-                            classNodes.Add(GetClassTreeNode(extendClassModel, true, false));
-
-                            extendClassModel = extendClassModel.Extends;
-                        }
-                    }
-                }
-
-                // Apply member sort
-                if (_memberSort != null)
-                    classNodes.Sort(_memberSort);
-
-                classComboBox.Items.AddRange(classNodes.ToArray());
-            }
-
-            // Select the class that contains the caret
-            UpdateClassDropDown();
-
-            classComboBox.FlatCombo.EndUpdate();
-        }
-
-        private MemberTreeNode GetClassTreeNode(ClassModel classModel, bool isInherited, bool isImported)
-        {
-            int imageNum = ((classModel.Flags & FlagType.Intrinsic) > 0) ? PluginUI.ICON_INTRINSIC_TYPE :
-                           ((classModel.Flags & FlagType.Interface) > 0) ? PluginUI.ICON_INTERFACE : PluginUI.ICON_TYPE;
-            return isInherited ? new InheritedClassTreeNode(classModel, imageNum, _settings.ShowQualifiedClassName) :
-                   isImported ? new ImportTreeNode(classModel, imageNum, _settings.ShowQualifiedClassName) :
-                                new ClassTreeNode(classModel, imageNum, _settings.ShowQualifiedClassName) as MemberTreeNode;
-        }
-
-        private void BuildMemberDropDown()
-        {
-            memberComboBox.FlatCombo.BeginUpdate();
-
-            memberComboBox.Items.Clear();
-
-            MemberList members = null;
-            ClassTreeNode classTreeNode = classComboBox.SelectedItem as ClassTreeNode;
-            ClassModel classModel = null;
-
-            if (ASContext.Context.CurrentModel != null)
-            {
-                List<MemberTreeNode> memberNodes = new List<MemberTreeNode>();
-
-                if (classTreeNode == null)
-                {
-                    // The caret is not within a class, so add the global members
-                    members = ASContext.Context.CurrentModel.Members;
-                }
-                else
-                {
-                    // The caret is within a class, so add the classes members
-                    classModel = (ClassModel)classTreeNode.Model;
-                    members = classModel.Members;
-                }
-
-                // Add the local members
-                foreach (MemberModel member in members)
-                {
-                    MemberTreeNode node = GetMemberTreeNode(member, null);
-
-                    if (node != null)
-                        memberNodes.Add(node);
-                }
-
-                // Add inherited members if applicable
-                if (_settings.ShowInheritedMembers && classModel != null)
-                    memberNodes.AddRange(GetInheritedMembers(classModel.Extends));
-
-                // Apply member sort
-                if (_memberSort != null)
-                    memberNodes.Sort(_memberSort);
-
-                memberComboBox.Items.AddRange(memberNodes.ToArray());
-            }
-
-            // Select the member that contains the caret
-            UpdateMemberDropDown();
-
-            memberComboBox.FlatCombo.EndUpdate();
-        }
-
-        private List<MemberTreeNode> GetInheritedMembers(ClassModel classModel)
-        {
-            var memberNodes = new List<MemberTreeNode>();
-
-            // Add members from our super class as long as it is not null, Object, Void, or haXe Dynamic
-            while (!IsRootType(classModel))
-            {
-                memberNodes.AddRange(classModel.Members
-                    .OfType<MemberModel>()
-                    .Select(member => GetMemberTreeNode(member, classModel))
-                    .Where(node => node != null));
-
-                // Follow the inheritence chain down
-                classModel = classModel.Extends;
-            }
-
-            return memberNodes;
-        }
-
-        private MemberTreeNode GetMemberTreeNode(MemberModel memberModel, ClassModel classModel)
-        {
-            MemberTreeNode node = null;
-            int imageIndex = PluginUI.GetIcon(memberModel.Flags, memberModel.Access);
-
-            if (imageIndex != 0)
-            {
-                node = classModel == null ? new MemberTreeNode(memberModel, imageIndex, _settings.LabelPropertiesLikeFunctions) :
-                                            new InheritedMemberTreeNode(classModel, memberModel, imageIndex, _settings.LabelPropertiesLikeFunctions);
-            }
-
-            return node;
-        }
-
-        #endregion
-
-        #region Update DropDown Methods
 
         private void UpdateDropDowns()
         {
+            _updating = true;
             UpdateClassDropDown();
             UpdateMemberDropDown();
+            _updating = false;
         }
 
         private void UpdateClassDropDown()
         {
-            MemberTreeNode selectedNode = null;
-            bool singleClassContext = false;
+            var singleClassContext = false;
 
             // Check to see if there is only one class in this file
             if (ASContext.Context.CurrentModel != null)
             {
                 if (ASContext.Context.CurrentModel.Classes.Count == 1 &&
                     ASContext.Context.CurrentModel.Members.Count == 0)
-                {
                     singleClassContext = true;
-                }
             }
 
             // get the line the caret is on
             int line = _document.SciControl.LineFromPosition(_document.SciControl.CurrentPos);
 
-            foreach (MemberTreeNode classNode in classComboBox.Items)
-            {
-                // if the caret is within the lines of the class, then select it
-                if (!(classNode is InheritedClassTreeNode) &&
-                    (singleClassContext ||
-                    (line >= classNode.Model.LineFrom && line <= classNode.Model.LineTo)))
-                {
-                    selectedNode = classNode;
-                    break;
-                }
-            }
+            var selectedNode = classComboBox.Items
+                .OfType<MemberTreeNode>()
+                .Where(node => !(node is InheritedClassTreeNode))
+                .FirstOrDefault(node => singleClassContext ||
+                    (line >= node.Model.LineFrom && line <= node.Model.LineTo));
 
-            if (_lastSelectedClassNode != selectedNode ||
-                classComboBox.SelectedItem != selectedNode)
-            {
-                // Update the combobox with the new selected node
-                _lastSelectedClassNode = selectedNode;
-                classComboBox.SelectedItem = selectedNode;
+            if (_lastSelectedClassNode == selectedNode &&
+                classComboBox.SelectedItem == selectedNode)
+                return;
 
-                // Update the members to match the new class
-                BuildMemberDropDown();
-            }
+            // Update the combobox with the new selected node
+            _lastSelectedClassNode = selectedNode;
+            classComboBox.SelectedItem = selectedNode;
+
+            // Update the members to match the new class
+            DropDownBuilder.BuildMemberDropDown(classComboBox, memberComboBox);
+            UpdateMemberDropDown();
         }
 
         private void UpdateMemberDropDown()
         {
-            MemberTreeNode currentMemberNode = memberComboBox.SelectedItem as MemberTreeNode;
-            MemberTreeNode selectedNode = null;
-
             // get the line the caret is on
             int line = _document.SciControl.LineFromPosition(_document.SciControl.CurrentPos);
 
-            foreach (MemberTreeNode memberNode in memberComboBox.Items)
-            {
-                // if the member is in this code file and the caret is within the lines of the member,
-                // then select it
-                if (!(memberNode is InheritedMemberTreeNode) &&
-                    (line >= memberNode.Model.LineFrom && line <= memberNode.Model.LineTo))
-                {
-                    selectedNode = memberNode;
-                    break;
-                }
-            }
+            var selectedNode = memberComboBox.Items
+                .OfType<MemberTreeNode>()
+                .Where(node => !(node is InheritedMemberTreeNode))
+                .FirstOrDefault(node => line >= node.Model.LineFrom && line <= node.Model.LineTo);
 
-            if (_lastSelectedClassNode != selectedNode ||
-                memberComboBox.SelectedItem != selectedNode)
-            {
-                // Update the combobox with the new selected node
-                _lastSelectedMemberNode = selectedNode;
-                memberComboBox.SelectedItem = selectedNode;
-            }
+            if (_lastSelectedClassNode == selectedNode &&
+                memberComboBox.SelectedItem == selectedNode)
+                return;
+
+            // Update the combobox with the new selected node
+            _lastSelectedMemberNode = selectedNode;
+            memberComboBox.SelectedItem = selectedNode;
         }
 
         private void ResetDropDowns()
@@ -795,161 +320,14 @@ namespace NavigationBar.Controls
             _updating = false;
         }
 
-        void dropDownSearchTimer_Tick(object sender, EventArgs e)
-        {
-            _dropDownSearchKey = "";
-            _dropDownSearchTimer.Stop();
-        }
-
-        #endregion
-
-        #region Node Search Methods
-
-        private void ForwardSearch(ComboBox comboBox, string searchKey)
-        {
-            MemberTreeNode node;
-            int currentIndex = comboBox.SelectedIndex;
-            int searchIndex;
-
-            // Search from the current index to the end of the items
-            for (searchIndex = currentIndex + 1; searchIndex < comboBox.Items.Count; searchIndex++)
-            {
-                node = (MemberTreeNode)comboBox.Items[searchIndex];
-
-                if (NodeStartsWith(node, searchKey))
-                {
-                    comboBox.SelectedIndex = searchIndex;
-                    return;
-                }
-            }
-
-            // Search from the beginning of the items to the current index
-            for (searchIndex = 0; searchIndex < currentIndex; searchIndex++)
-            {
-                node = (MemberTreeNode)comboBox.Items[searchIndex];
-
-                if (NodeStartsWith(node, searchKey))
-                {
-                    comboBox.SelectedIndex = searchIndex;
-                    return;
-                }
-            }
-
-            // If searching the beginning of the nodes' names has failed, then run through
-            // the full list from top to bottom and search through nodes' full name.
-            if (_settings.DropDownFullWordSearchEnabled)
-            {
-                int itemCount = comboBox.Items.Count;
-                for (searchIndex = 0; searchIndex < itemCount; ++searchIndex)
-                {
-                    node = (MemberTreeNode)comboBox.Items[searchIndex];
-
-                    if (NodeContains(node, searchKey))
-                    {
-                        comboBox.SelectedIndex = searchIndex;
-                        return;
-                    }
-                }
-            }
-        }
-
-        private void ReverseSearch(ComboBox comboBox, string searchKey)
-        {
-            MemberTreeNode node;
-            int currentIndex = comboBox.SelectedIndex;
-            int searchIndex;
-
-            // Search from the current index to the beginning of the items
-            for (searchIndex = currentIndex - 1; searchIndex >= 0; searchIndex--)
-            {
-                node = (MemberTreeNode)comboBox.Items[searchIndex];
-
-                if (NodeStartsWith(node, searchKey))
-                {
-                    comboBox.SelectedIndex = searchIndex;
-                    return;
-                }
-            }
-
-            // Search from the end of the items to the current index
-            for (searchIndex = comboBox.Items.Count - 1; searchIndex > currentIndex; searchIndex--)
-            {
-                node = (MemberTreeNode)comboBox.Items[searchIndex];
-
-                if (NodeStartsWith(node, searchKey))
-                {
-                    comboBox.SelectedIndex = searchIndex;
-                    return;
-                }
-            }
-
-            // If searching the beginning of the nodes' names has failed, then run through
-            // the full list from bottom to top and search through nodes' full name.
-            if (_settings.DropDownFullWordSearchEnabled)
-            {
-                for (searchIndex = comboBox.Items.Count; searchIndex >= 0; --searchIndex)
-                {
-                    node = (MemberTreeNode)comboBox.Items[searchIndex];
-
-                    if (NodeContains(node, searchKey))
-                    {
-                        comboBox.SelectedIndex = searchIndex;
-                        return;
-                    }
-                }
-            }
-        }
-
-        private string GetNodeSearchString(MemberTreeNode node)
-        {
-            // If node navigates to a class then ignore the package name
-            if (node is ClassTreeNode || node is ImportTreeNode || node is InheritedClassTreeNode)
-            {
-                return _settings.IgnoreUnderscore ? node.Model.Name.TrimStart('_') : node.Model.Name;
-            }
-            return _settings.IgnoreUnderscore ? node.Label.TrimStart('_') : node.Label;
-        }
-
-        private bool NodeStartsWith(MemberTreeNode node, string searchKey)
-        {
-            return GetNodeSearchString(node).StartsWith(searchKey, StringComparison.CurrentCultureIgnoreCase);
-        }
-
-        private bool NodeContains(MemberTreeNode node, string searchKey)
-        {
-            // Using IndexOf instead of Contains so that the IgnoreCase can be included
-            return GetNodeSearchString(node).IndexOf(searchKey, 0, StringComparison.CurrentCultureIgnoreCase) != -1;
-        }
-
-        #endregion
-
-        #region Other Methods
-
-        private bool IsRootType(ClassModel classModel)
-        {
-            return classModel == null ||
-                   classModel.Name == "Object" ||
-                   classModel == ClassModel.VoidClass ||
-                   (classModel.InFile.haXe && classModel.Type == "Dynamic");
-        }
-
         public void RefreshSettings()
         {
-            UpdateContextMenu();
+            contextMenu.UpdateContextMenu();
 
-            _memberSort = MemberTreeNodeComparer.GetComparer(_settings.MemberSortMethod);
-
-            // Show the imported dropdown if it is not visible
             if (_settings.ShowImportedClasses)
                 ShowImportDropDown();
-            // Hide the imported dropdown if it is visible
             else if (!_settings.ShowImportedClasses)
                 HideImportDropDown();
-
-            if (_dropDownSearchTimer != null && _settings.DropDownMultiKeyTimer > 0)
-            {
-                _dropDownSearchTimer.Interval = _settings.DropDownMultiKeyTimer;
-            }
 
             // Forces a rebuild of the dropdowns
             _textChanged = true;
@@ -974,8 +352,6 @@ namespace NavigationBar.Controls
                 updateTimer.Stop();
                 return;
             }
-
-            _updating = true;
 
             // If we are not visible then we should see if we belong in this document
             if (!Visible)
@@ -1004,8 +380,8 @@ namespace NavigationBar.Controls
             }
             // Rebuild the dropdowns if the text changed and the model has updated
             else if (_textChanged &&
-                     ASContext.Context.CurrentModel != null &&
-                     !ASContext.Context.CurrentModel.OutOfDate)
+                    ASContext.Context.CurrentModel != null &&
+                    !ASContext.Context.CurrentModel.OutOfDate)
             {
                 _textChanged = false;
                 if (_completeBuild)
@@ -1019,169 +395,6 @@ namespace NavigationBar.Controls
                 _lastPosition = _document.SciControl.CurrentPos;
                 UpdateDropDowns();
             }
-
-            _updating = false;
-        }
-
-        #endregion
-
-        #region Navigate Methods
-
-        private void NavigateToMemberTreeNode(MemberTreeNode node)
-        {
-            if (node is InheritedMemberTreeNode)
-            {
-                InheritedMemberTreeNode inheritedNode = (InheritedMemberTreeNode)node;
-                FileModel model = ModelsExplorer.Instance.OpenFile(inheritedNode.ClassModel.InFile.FileName);
-
-                // We have to update the Tag to reflect the line number the member starts on
-                if (!(node is InheritedClassTreeNode))
-                    inheritedNode.Tag = GetInheritedMemberTag(model, inheritedNode.Model.Name) ?? string.Empty;
-            }
-            else if (node is ImportTreeNode)
-            {
-                ImportTreeNode importNode = (ImportTreeNode)node;
-                ClassModel importModel = (ClassModel)importNode.Model;
-                if (!importModel.IsVoid() && importModel.InFile != null)
-                    ModelsExplorer.Instance.OpenFile(importModel.InFile.FileName);
-            }
-
-            // Navigate to node location
-            ASContext.Context.OnSelectOutlineNode(node);
-
-            // If navigating to an inherited class or member, we need to reset our combobox
-            if (node is InheritedMemberTreeNode || node is ImportTreeNode)
-                ResetDropDowns();
-        }
-
-        private string GetInheritedMemberTag(FileModel model, string memberName)
-        {
-            return model.Classes
-                .SelectMany(classModel => classModel.Members.Cast<MemberModel>())
-                .Where(memberModel => memberModel.Name == memberName)
-                .Select(memberModel => memberModel.Name + "@" + memberModel.LineFrom)
-                .FirstOrDefault();
-        }
-
-        #endregion
-    }
-
-    #region Custom Structures
-
-    class MemberTreeNode : TreeNode
-    {
-        public MemberModel Model { get; protected set; }
-        public string Label { get; protected set; }
-
-        public MemberTreeNode(MemberModel memberModel, int imageIndex, bool labelPropertiesLikeFunctions)
-            : base(memberModel.ToString(), imageIndex, imageIndex)
-        {
-            if (labelPropertiesLikeFunctions &&
-                (memberModel.Flags & (FlagType.Setter | FlagType.Getter)) != 0)
-            {
-                List<string> paramList = new List<string>();
-                if (memberModel.Parameters != null)
-                    paramList.AddRange(memberModel.Parameters.Select(param => string.Format("{0}:{1}", param.Name, param.Type)));
-
-                Label = string.Format("{0} ({1}) : {2}", memberModel.Name, string.Join(", ", paramList.ToArray()), memberModel.Type);
-            }
-            else
-            {
-                Label = Text;
-            }
-
-            Model = memberModel;
-            Tag = memberModel.Name + "@" + memberModel.LineFrom;
         }
     }
-
-    class InheritedMemberTreeNode : MemberTreeNode
-    {
-        public InheritedMemberTreeNode(ClassModel classModel, MemberModel memberModel, int imageIndex, bool labelPropertiesLikeFunctions)
-            : base(memberModel, imageIndex, labelPropertiesLikeFunctions)
-        {
-            Label = Text + " - " + classModel.Name;
-            ClassModel = classModel;
-        }
-
-        public ClassModel ClassModel { get; protected set; }
-    }
-
-    class ImportTreeNode : MemberTreeNode
-    {
-        public ImportTreeNode(ClassModel importModel, int imageIndex, bool showQualifiedClassNames)
-            : base(importModel, imageIndex, false)
-        {
-            Text = importModel.Name;
-            Tag = "class";
-            Label = showQualifiedClassNames ? importModel.QualifiedName : importModel.Name;
-        }
-    }
-
-    class ClassTreeNode : MemberTreeNode
-    {
-        public ClassModel ClassModel { get { return (ClassModel)Model; } }
-
-        public ClassTreeNode(ClassModel classModel, int imageIndex, bool showQualifiedClassNames)
-            : base(classModel, imageIndex, false)
-        {
-            Text = classModel.Name;
-            Tag = "class";
-            Label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
-        }
-    }
-
-    class InheritedClassTreeNode : InheritedMemberTreeNode
-    {
-        public InheritedClassTreeNode(ClassModel classModel, int imageIndex, bool showQualifiedClassNames)
-            : base(classModel, classModel, imageIndex, false)
-        {
-            Text = classModel.Name;
-            Tag = "class";
-            Label = showQualifiedClassNames ? classModel.QualifiedName : classModel.Name;
-        }
-    }
-
-    class MemberTreeNodeComparer : IComparer<MemberTreeNode>
-    {
-        private static MemberTreeNodeComparer _sortedComparer = new MemberTreeNodeComparer(null);
-        private static MemberTreeNodeComparer _byKindComparer = new MemberTreeNodeComparer(new ByKindMemberComparer());
-        private static MemberTreeNodeComparer _smartSortComparer = new MemberTreeNodeComparer(new SmartMemberComparer());
-
-        private IComparer<MemberModel> _memberModelComparer;
-
-        public static MemberTreeNodeComparer GetComparer(OutlineSorting outlineSort)
-        {
-            MemberTreeNodeComparer memberSort = null;
-
-            switch (outlineSort)
-            {
-                case OutlineSorting.Sorted:
-                    memberSort = _sortedComparer;
-                    break;
-                case OutlineSorting.SortedByKind:
-                case OutlineSorting.SortedGroup:
-                    memberSort = _byKindComparer;
-                    break;
-                case OutlineSorting.SortedSmart:
-                    memberSort = _smartSortComparer;
-                    break;
-            }
-
-            return memberSort;
-        }
-
-        public MemberTreeNodeComparer(IComparer<MemberModel> memberModelComparer)
-        {
-            _memberModelComparer = memberModelComparer;
-        }
-
-        public int Compare(MemberTreeNode x, MemberTreeNode y)
-        {
-            return _memberModelComparer != null ? _memberModelComparer.Compare(x.Model, y.Model) :
-                                                  x.Label.CompareTo(y.Label);
-        }
-    }
-
-    #endregion
 }
