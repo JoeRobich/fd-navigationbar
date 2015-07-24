@@ -16,11 +16,11 @@ namespace NavigationBar.Controls
             if (labelPropertiesLikeFunctions &&
                 (memberModel.Flags & (FlagType.Setter | FlagType.Getter)) != 0)
             {
-                List<string> paramList = new List<string>();
+                var paramList = string.Empty;
                 if (memberModel.Parameters != null)
-                    paramList.AddRange(memberModel.Parameters.Select(param => string.Format("{0}:{1}", param.Name, param.Type)));
+                    paramList = string.Join(", ", memberModel.Parameters.Select(p => string.Format("{0}:{1}", p.Name, p.Type)).ToArray());
 
-                Label = string.Format("{0} ({1}) : {2}", memberModel.Name, string.Join(", ", paramList.ToArray()), memberModel.Type);
+                Label = string.Format("{0} ({1}) : {2}", memberModel.Name, paramList, memberModel.Type);
             }
             else
             {

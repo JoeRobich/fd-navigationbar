@@ -13,11 +13,6 @@ namespace NavigationBar.Helpers
 
         static ItemRenderer()
         {
-            InitializeIcons();
-        }
-
-        static void InitializeIcons()
-        {
             //Pull the member icons from the resources;
             _icons = new Bitmap[] {
                 ScaleHelper.Scale(new Bitmap(PluginUI.GetStream("FilePlain.png"))),

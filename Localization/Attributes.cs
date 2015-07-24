@@ -1,8 +1,6 @@
-﻿using System;
+﻿using NavigationBar.Helpers;
+using System;
 using System.ComponentModel;
-using System.Collections.Generic;
-using System.Text;
-using NavigationBar.Helpers;
 
 namespace NavigationBar.Localization
 {
@@ -16,7 +14,7 @@ namespace NavigationBar.Localization
             : base(key)
         {
         }
-        
+
         protected override string GetLocalizedString(string key)
         {
             if (!initialized)

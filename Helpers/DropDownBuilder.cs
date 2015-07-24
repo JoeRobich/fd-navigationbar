@@ -2,10 +2,8 @@
 using ASCompletion.Context;
 using ASCompletion.Model;
 using NavigationBar.Controls;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace NavigationBar.Helpers
@@ -117,25 +115,21 @@ namespace NavigationBar.Helpers
 
             if (ASContext.Context.CurrentModel != null)
             {
-                List<MemberTreeNode> memberNodes = new List<MemberTreeNode>();
-
                 ClassTreeNode classTreeNode = classComboBox.SelectedItem as ClassTreeNode;
                 ClassModel classModel = (classTreeNode != null) ? (ClassModel)classTreeNode.Model : null;
                 MemberList members = (classModel != null) ? classModel.Members : ASContext.Context.CurrentModel.Members;
 
-                members.OfType<MemberModel>()
+                var memberNodes = members.OfType<MemberModel>()
                     .Select(m => GetMemberTreeNode(m, null))
-                    .Where(mn => mn != null)
-                    .ToList()
-                    .ForEach(memberNodes.Add);
+                    .Where(mn => mn != null);
 
                 // Add inherited members if applicable
                 if (Settings.ShowInheritedMembers && classModel != null)
-                    memberNodes.AddRange(GetInheritedMembers(classModel.Extends));
+                    memberNodes = memberNodes.Concat(GetInheritedMembers(classModel.Extends));
 
                 // Apply member sort
                 if (_memberSort != null)
-                    memberNodes.Sort(_memberSort);
+                    memberNodes = memberNodes.OrderBy(n => n, _memberSort);
 
                 memberComboBox.Items.AddRange(memberNodes.ToArray());
             }
@@ -145,15 +139,15 @@ namespace NavigationBar.Helpers
 
         static IEnumerable<MemberTreeNode> GetInheritedMembers(ClassModel classModel)
         {
-            var memberNodes = new List<MemberTreeNode>();
+            var memberNodes = Enumerable.Empty<MemberTreeNode>();
 
             // Add members from our super class as long as it is not null, Object, Void, or haXe Dynamic
             while (!IsRootType(classModel))
             {
-                memberNodes.AddRange(classModel.Members
+                memberNodes = memberNodes.Concat(classModel.Members
                     .OfType<MemberModel>()
                     .Select(member => GetMemberTreeNode(member, classModel))
-                    .Where(node => node != null));
+                    .Where(mn => mn != null));
 
                 // Follow the inheritence chain down
                 classModel = classModel.Extends;
@@ -168,10 +162,9 @@ namespace NavigationBar.Helpers
             int imageIndex = PluginUI.GetIcon(memberModel.Flags, memberModel.Access);
 
             if (imageIndex != 0)
-            {
-                node = classModel == null ? new MemberTreeNode(memberModel, imageIndex, Settings.LabelPropertiesLikeFunctions) :
-                                            new InheritedMemberTreeNode(classModel, memberModel, imageIndex, Settings.LabelPropertiesLikeFunctions);
-            }
+                node = classModel == null ?
+                    new MemberTreeNode(memberModel, imageIndex, Settings.LabelPropertiesLikeFunctions) :
+                    new InheritedMemberTreeNode(classModel, memberModel, imageIndex, Settings.LabelPropertiesLikeFunctions);
 
             return node;
         }

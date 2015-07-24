@@ -48,7 +48,7 @@ namespace NavigationBar.Helpers
             _dropDownSearchKey = "";
         }
 
-            static void ForwardSearch(ComboBox comboBox, string searchKey)
+        static void ForwardSearch(ComboBox comboBox, string searchKey)
         {
             MemberTreeNode node;
             int currentIndex = comboBox.SelectedIndex;
@@ -147,9 +147,8 @@ namespace NavigationBar.Helpers
         {
             // If node navigates to a class then ignore the package name
             if (node is ClassTreeNode || node is ImportTreeNode || node is InheritedClassTreeNode)
-            {
                 return Settings.IgnoreUnderscore ? node.Model.Name.TrimStart('_') : node.Model.Name;
-            }
+
             return Settings.IgnoreUnderscore ? node.Label.TrimStart('_') : node.Label;
         }
 

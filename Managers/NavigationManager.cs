@@ -1,36 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows.Forms;
+﻿using ASCompletion;
 using ASCompletion.Context;
-using ASCompletion;
 using ASCompletion.Model;
-using System.Collections;
-using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace NavigationBar.Managers
 {
     public class NavigationManager
     {
-        private static NavigationManager _instance = null;
+        static NavigationManager _instance = new NavigationManager();
 
         public static NavigationManager Instance
         {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new NavigationManager();
-                }
-
-                return _instance;
-            }
+            get { return _instance; }
         }
 
-        private FixedSizeStack<NavigationLocation> _backwardStack = null;
-        private FixedSizeStack<NavigationLocation> _forwardStack = null;
-        private NavigationLocation _currentLocation = null;
-        private Timer _updateTimer = null;
+        FixedSizeStack<NavigationLocation> _backwardStack = null;
+        FixedSizeStack<NavigationLocation> _forwardStack = null;
+        NavigationLocation _currentLocation = null;
+        Timer _updateTimer = null;
 
         public event EventHandler LocationChanged;
 
@@ -47,26 +36,17 @@ namespace NavigationBar.Managers
 
         public NavigationLocation CurrentLocation
         {
-            get
-            {
-                return _currentLocation;
-            }
+            get { return _currentLocation; }
         }
 
         public bool CanNavigateForward
         {
-            get
-            {
-                return _forwardStack.Count > 0;
-            }
+            get { return _forwardStack.Count > 0; }
         }
 
         public bool CanNavigateBackward
         {
-            get
-            {
-                return _backwardStack.Count > 0;
-            }
+            get { return _backwardStack.Count > 0; }
         }
 
         public void NavigateForward()
@@ -241,81 +221,4 @@ namespace NavigationBar.Managers
                 LocationChanged(this, new EventArgs());
         }
     }
-
-    #region Custom Structures
-
-    public class NavigationLocation
-    {
-        public string FilePath { get; set; }
-        public int Position { get; set; }
-        public string ClassName { get; set; }
-        public string MemberName { get; set; }
-        public FlagType MemberFlags { get; set; }
-        public int LineFrom { get; set; }
-
-        public override string ToString()
-        {
-            if (string.IsNullOrEmpty(MemberName))
-                return string.Format("{0} {1} Line: {2}", Path.GetFileName(FilePath), ClassName, LineFrom);
-            else
-                return string.Format("{0} {1}.{2} Line: {3}", Path.GetFileName(FilePath), ClassName, MemberName, LineFrom);
-        }
-    }
-
-    class FixedSizeStack<T> : IEnumerable<T>
-    {
-        private List<T> _list = new List<T>();
-        private int _maxSize = 10;
-
-        public FixedSizeStack(int size)
-        {
-            if (size > 0)
-                _maxSize = size;
-        }
-
-        public int Count
-        {
-            get
-            {
-                return _list.Count;
-            }
-        }
-
-        public T Pop()
-        {
-            T item = _list[0];
-            _list.RemoveAt(0);
-            return item;
-        }
-
-        public void Push(T item)
-        {
-            _list.Insert(0, item);
-
-            if (_list.Count >= _maxSize)
-                _list.RemoveAt(_maxSize - 1);
-        }
-
-        public bool Contains(T item)
-        {
-            return _list.Contains(item);
-        }
-
-        public void Clear()
-        {
-            _list.Clear();
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
-    }
-
-    #endregion
 }

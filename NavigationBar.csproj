@@ -65,6 +65,8 @@
     <Compile Include="Controls\NavigationBar.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Managers\FixedSizeStack.cs" />
+    <Compile Include="Managers\NavigationLocation.cs" />
     <Compile Include="Managers\NavigationManager.cs" />
     <Compile Include="PluginMain.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
