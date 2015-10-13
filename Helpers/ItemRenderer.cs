@@ -101,7 +101,7 @@ namespace NavigationBar.Helpers
 
         static void DrawItemBackground(ComboBox comboBox, DrawItemEventArgs e)
         {
-            Color backColor;
+            Color backColor = Color.Empty;
 
             if (e.Bounds.X == 0)
                 backColor = PluginBase.MainForm.GetThemeColor("ToolStripMenu.BackColor");
