@@ -21,10 +21,13 @@ namespace NavigationBar.Helpers
         internal static void ComboBox_KeyPress(object sender, KeyPressEventArgs e)
         {
             ComboBox comboBox = ((ToolStripSpringComboBox)sender).FlatCombo;
-            string searchKey = e.KeyChar.ToString();
+            char searchKey = e.KeyChar;
+            bool incrementalSearch = false;
 
             if (Settings.DropDownMultiKeyEnabled)
             {
+                incrementalSearch = _dropDownSearchKey.Length > 0 &&
+                                    _dropDownSearchKey.ToCharArray()[_dropDownSearchKey.Length - 1] == searchKey;
                 _dropDownSearchTimer.Stop();
                 _dropDownSearchKey += searchKey;
                 _dropDownSearchTimer.Interval = Settings.DropDownMultiKeyTimer;
@@ -32,14 +35,28 @@ namespace NavigationBar.Helpers
             }
             else
             {
-                _dropDownSearchKey = searchKey;
+                _dropDownSearchKey = searchKey.ToString();
             }
 
+            bool foundMatch;
+            int currentIndex = comboBox.SelectedIndex;
             // If shift is pressed then reverse search
             if ((Control.ModifierKeys & Keys.Shift) == 0)
-                ForwardSearch(comboBox, _dropDownSearchKey);
+                foundMatch = ForwardSearch(comboBox, _dropDownSearchKey, currentIndex);
             else
-                ReverseSearch(comboBox, _dropDownSearchKey);
+                foundMatch = ReverseSearch(comboBox, _dropDownSearchKey, currentIndex);
+
+            if (!foundMatch && incrementalSearch)
+            {
+                // No match and the user is pressing the same character, so wrap around similar entries
+                _dropDownSearchKey = _dropDownSearchKey.Remove(_dropDownSearchKey.Length - 1);
+                if ((Control.ModifierKeys & Keys.Shift) == 0)
+                    ForwardSearch(comboBox, _dropDownSearchKey, currentIndex + 1);
+                else
+                    ReverseSearch(comboBox, _dropDownSearchKey, currentIndex - 1);
+            }
+
+            e.Handled = true;
         }
 
         internal static void Reset()
@@ -48,21 +65,21 @@ namespace NavigationBar.Helpers
             _dropDownSearchKey = "";
         }
 
-        static void ForwardSearch(ComboBox comboBox, string searchKey)
+        static bool ForwardSearch(ComboBox comboBox, string searchKey, int currentIndex)
         {
             MemberTreeNode node;
-            int currentIndex = comboBox.SelectedIndex;
             int searchIndex;
 
             // Search from the current index to the end of the items
-            for (searchIndex = currentIndex + 1; searchIndex < comboBox.Items.Count; searchIndex++)
+            if (currentIndex == -1) currentIndex = 0;
+            for (searchIndex = currentIndex; searchIndex < comboBox.Items.Count; searchIndex++)
             {
                 node = (MemberTreeNode)comboBox.Items[searchIndex];
 
                 if (NodeStartsWith(node, searchKey))
                 {
                     comboBox.SelectedIndex = searchIndex;
-                    return;
+                    return true;
                 }
             }
 
@@ -74,7 +91,7 @@ namespace NavigationBar.Helpers
                 if (NodeStartsWith(node, searchKey))
                 {
                     comboBox.SelectedIndex = searchIndex;
-                    return;
+                    return true;
                 }
             }
 
@@ -90,27 +107,28 @@ namespace NavigationBar.Helpers
                     if (NodeContains(node, searchKey))
                     {
                         comboBox.SelectedIndex = searchIndex;
-                        return;
+                        return true;
                     }
                 }
             }
+
+            return false;
         }
 
-        static void ReverseSearch(ComboBox comboBox, string searchKey)
+        static bool ReverseSearch(ComboBox comboBox, string searchKey, int currentIndex)
         {
             MemberTreeNode node;
-            int currentIndex = comboBox.SelectedIndex;
             int searchIndex;
 
             // Search from the current index to the beginning of the items
-            for (searchIndex = currentIndex - 1; searchIndex >= 0; searchIndex--)
+            for (searchIndex = currentIndex; searchIndex >= 0; searchIndex--)
             {
                 node = (MemberTreeNode)comboBox.Items[searchIndex];
 
                 if (NodeStartsWith(node, searchKey))
                 {
                     comboBox.SelectedIndex = searchIndex;
-                    return;
+                    return true;
                 }
             }
 
@@ -122,7 +140,7 @@ namespace NavigationBar.Helpers
                 if (NodeStartsWith(node, searchKey))
                 {
                     comboBox.SelectedIndex = searchIndex;
-                    return;
+                    return true;
                 }
             }
 
@@ -137,10 +155,12 @@ namespace NavigationBar.Helpers
                     if (NodeContains(node, searchKey))
                     {
                         comboBox.SelectedIndex = searchIndex;
-                        return;
+                        return true;
                     }
                 }
             }
+
+            return false;
         }
 
         static string GetNodeSearchString(MemberTreeNode node)
